@@ -845,8 +845,12 @@ jobs:
       
       Write-Host "Installing PHP $(phpVersion) version $version"
       
-      # Compare the PHP version without a Windows packaging revision (e.g. 8.5.12-1).
-      $vsVersion = if ([version]($version -split '-', 2)[0] -ge [version]"8.5.0") { "vs17" } else { "vs16" }
+      # Select by supported minor, allowing prerelease and Windows packaging suffixes.
+      $vsVersion = switch -Regex ($version) {
+        '^8\.[45]\.' { "vs17"; break }
+        '^8\.6\.' { "vs18"; break }
+        default { throw "Unsupported PHP version: $version. Use PHP 8.4, 8.5 or 8.6." }
+      }
       
       # Download PHP NTS x64
       $phpUrl = "https://windows.php.net/downloads/releases/php-$version-nts-Win32-$vsVersion-x64.zip"

@@ -46,20 +46,9 @@ function checkInterface($stmt)
         'getColumnMeta'     => true,
         'nextRowset'        => true,
         'rowCount'      => true,
-        '__wakeup'      => true,
-        '__sleep'       => true,
+        'getIterator'  => true,
     );
     
-    $phpver = substr(phpversion(), 0, 3);
-    if ($phpver >= '7.4') {
-        // Reference: https://wiki.php.net/rfc/custom_object_serialization
-        unset($expected['__wakeup']);
-        unset($expected['__sleep']);
-    }
-    if ($phpver >= '8.0') {
-        $expected = array_merge($expected, ['getIterator' => true]);
-    }
-
     $classname = get_class($stmt);
     $methods = get_class_methods($classname);
     foreach ($methods as $k => $method) {

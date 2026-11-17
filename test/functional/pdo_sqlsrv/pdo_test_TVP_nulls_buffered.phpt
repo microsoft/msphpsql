@@ -14,11 +14,7 @@ require_once('MsCommon_mid-refactor.inc');
 function verifyPhoto($image, $photo)
 {
     // With PHP 8.1+, bindColumn() of binary fields will be resource
-    if (PHP_VERSION_ID >= 80100) {
-        return verifyBinaryStream($image, $photo);
-    } else {
-        return verifyBinaryData($image, $photo);
-    }
+    return verifyBinaryStream($image, $photo);
 }
 
 try {

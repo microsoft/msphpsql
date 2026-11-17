@@ -21,7 +21,6 @@ function testConnAttrCases()
     global $server, $databaseName, $driver, $uid, $pwd;
 
     $stmtErr = '*The given attribute is only supported on the PDOStatement object.';
-    $noSupportErr = '*driver does not support that attribute';
 
     try {
         $dsn = getDSN($server, $databaseName, $driver);
@@ -52,8 +51,7 @@ function testConnAttrCases()
         $conn = new PDO($dsn, $uid, $pwd, $attr);
         $conn->getAttribute(PDO::SQLSRV_ATTR_DATA_CLASSIFICATION);
     } catch (PDOException $e) {
-        $expected = (PHP_VERSION_ID < 80100) ? $noSupportErr : $stmtErr;
-        if (!fnmatch($expected, $e->getMessage())) {
+        if (!fnmatch($stmtErr, $e->getMessage())) {
             echo "Connection attribute test (3) unexpected\n";
             var_dump($e->getMessage());
         }

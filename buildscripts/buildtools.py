@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 #########################################################################################
 #
-# Description:  The class BuildUtil will build Microsoft SQL Server PHP 7+ Drivers 
+# Description:  BuildUtil builds Microsoft SQL Server drivers for PHP 8.4, 8.5 and 8.6
 #               for 32 bit and 64 bit.
 #
 # Requirement:
@@ -9,7 +9,7 @@
 #               PHP SDK and PHP Source 
 #               Driver source code folder
 #               Git for Windows
-#               Visual Studio 2015 (PHP 7.0* and 7.1*) and Visual Studio 2017 (PHP 7.2*)
+#               Visual Studio 2022 (PHP 8.4/8.5) or Visual Studio 2026 (PHP 8.6)
 #
 # Output: The drivers will be renamed and copied to the specified location.
 #
@@ -29,19 +29,19 @@ from typing import Optional
 
 
 def validate_php_version(version: str) -> bool:
-    """Accept PHP 7+ versions, including official and legacy prerelease forms."""
+    """Accept PHP 8.4, 8.5 and 8.6, including official and legacy prerelease forms."""
     if not isinstance(version, str):
         return False
-    pattern = r'(\d+)\.\d+(?:\.\d+)?(?:[-.]?(?:RC\d+|beta\d+|alpha\d+)|[-.][a-zA-Z]+)?'
+    pattern = r'8\.[456](?:\.\d+)?(?:[-.]?(?:RC\d+|beta\d+|alpha\d+)|[-.][a-zA-Z]+)?'
     match = re.fullmatch(pattern, version)
-    return match is not None and int(match.group(1)) >= 7
+    return match is not None
 
 
 class BuildUtil(object):
     """Build sqlsrv and/or pdo_sqlsrv drivers with PHP source with the following properties:
     
     Attributes:
-        phpver          # PHP version, e.g. 7.1.*, 7.2.* etc.
+        phpver          # PHP version, e.g. 8.4.27, 8.5.12 or 8.6.0RC7
         driver          # all, sqlsrv, or pdo_sqlsrv
         arch            # x64 or x86
         thread          # nts or ts
@@ -52,7 +52,7 @@ class BuildUtil(object):
     def __init__(self, phpver: str, driver: str, arch: str, thread: str, no_rename: bool, debug_enabled: bool = False):
         # Validate inputs
         if not self._validate_php_version(phpver):
-            raise ValueError(f"Invalid PHP version format: {phpver}")
+            raise ValueError(f"Unsupported or invalid PHP version: {phpver}. Use PHP 8.4, 8.5 or 8.6.")
         if driver.lower() not in ['all', 'sqlsrv', 'pdo_sqlsrv']:
             raise ValueError(f"Driver must be 'all', 'sqlsrv', or 'pdo_sqlsrv', got: {driver}")
         if arch.lower() not in ['x64', 'x86']:
@@ -74,7 +74,7 @@ class BuildUtil(object):
 
     def major_version(self) -> str:
         """Return the major version number based on the PHP version."""
-        # Extract major.minor (e.g., "7.2" from "7.2.1" or "7.2-RC1")
+        # Extract major.minor (e.g., "8.6" from "8.6.0RC7").
         match = re.match(r'^(\d+\.\d+)', self.phpver)
         if match:
             return match.group(1)
@@ -83,7 +83,7 @@ class BuildUtil(object):
     def version_label(self) -> str:
         """Return the version label based on the PHP version."""
         major_ver = self.major_version()       
-        # Remove the dot (e.g., "7.2" becomes "72")
+        # Remove the dot (e.g., "8.6" becomes "86").
         version = major_ver.replace('.', '')
         return version
 
@@ -98,18 +98,17 @@ class BuildUtil(object):
 
     def compiler_version(self, sdk_dir: str) -> str:
         """Return the compiler version based on PHP version.
-        PHP 8.6+ uses vs18 (Visual Studio 2026), PHP 8.4/8.5 uses vs17
-        (Visual Studio 2022), and PHP 8.3 and below uses vs16 (Visual Studio 2019).
+        PHP 8.6 uses vs18 (Visual Studio 2026), PHP 8.4/8.5 uses vs17
+        (Visual Studio 2022). Other PHP versions are not supported.
         """
+        if not validate_php_version(self.phpver):
+            raise ValueError(f"Unsupported or invalid PHP version: {self.phpver}. Use PHP 8.4, 8.5 or 8.6.")
         if self.vc == '':
             major_ver = self.major_version()
-            version_num = tuple(int(part) for part in major_ver.split('.'))
-            if version_num >= (8, 6):
+            if major_ver == '8.6':
                 self.vc = 'vs18'
-            elif version_num >= (8, 4):
-                self.vc = 'vs17'
             else:
-                self.vc = 'vs16'
+                self.vc = 'vs17'
             print('Compiler: ' + self.vc + ' (PHP ' + major_ver + ')')
         return self.vc
 
@@ -729,7 +728,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description='Build Microsoft SQL Server PHP Drivers')
-    parser.add_argument('--phpver', required=True, help='PHP version (e.g., 7.4.1, 8.0.0)')
+    parser.add_argument('--phpver', required=True, help='PHP 8.4, 8.5 or 8.6 version (e.g., 8.4.27, 8.6.0RC7)')
     parser.add_argument('--driver', required=True, choices=['all', 'sqlsrv', 'pdo_sqlsrv'], 
                        help='Driver to build')
     parser.add_argument('--arch', required=True, choices=['x64', 'x86'], 

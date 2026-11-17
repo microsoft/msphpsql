@@ -890,9 +890,6 @@ PHP_FUNCTION( sqlsrv_fetch_object )
 
             memset( &fci, 0, sizeof( fci ));
             fci.size = sizeof( fci );
-#if PHP_VERSION_ID < 70100
-            fci.function_table = &( class_entry )->function_table;
-#endif
             ZVAL_UNDEF( &( fci.function_name ) );
             fci.retval = &ctor_retval_z;
             fci.param_count = num_params;
@@ -901,9 +898,6 @@ PHP_FUNCTION( sqlsrv_fetch_object )
             fci.object = Z_OBJ_P( &retval_z );
 
             memset( &fcic, 0, sizeof( fcic ));
-#if PHP_VERSION_ID < 70300
-            fcic.initialized = 1;
-#endif
             fcic.function_handler = class_entry->constructor;
             fcic.calling_scope = class_entry;
 
@@ -1432,13 +1426,7 @@ PHP_FUNCTION( sqlsrv_free_stmt )
         }
 
         // delete the resource from Zend's master list, which will trigger the statement's destructor
-#if PHP_VERSION_ID < 80000
-        if (zend_list_close(Z_RES_P(stmt_r)) == FAILURE) {
-            LOG(SEV_ERROR, "Failed to remove stmt resource %1!d!", Z_RES_P(stmt_r)->handle);
-        }
-#else
         zend_list_close(Z_RES_P(stmt_r));
-#endif
 
         // when stmt_r is first parsed in zend_parse_parameters, stmt_r becomes a zval that points to a zend_resource with a refcount of 2
         // need to DELREF here so the refcount becomes 1 and stmt_r can be appropriate destroyed by the garbage collector when it goes out of scope

@@ -42,22 +42,12 @@ function CheckInterface($conn)
         'prepare'       => true,
         'lastInsertId'      => true,
         'quote'         => true,
-        '__wakeup'      => true,
-        '__sleep'       => true,
         'inTransaction'     => true,
     );
     
-    $phpver = substr(phpversion(), 0, 3);
-    if ($phpver >= '7.4') {
-        // Reference: https://wiki.php.net/rfc/custom_object_serialization
-        unset($expected['__wakeup']);
-        unset($expected['__sleep']);
-    }
-    if ($phpver >= '8.4') {
-	// PHP 8.4+: PDO class exposes connect() method
-        // Reference: https://wiki.php.net/rfc/pdo_driver_specific_subclasses
-        $expected['connect'] = true;
-    }
+    // PDO class exposes connect() independently of driver-specific subclasses.
+    // Reference: https://wiki.php.net/rfc/pdo_driver_specific_subclasses
+    $expected['connect'] = true;
     
     $classname = get_class($conn);
     $methods = get_class_methods($classname);
