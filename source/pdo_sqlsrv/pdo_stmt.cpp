@@ -544,6 +544,23 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt )
         pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
         SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_execute: driver_data object was null" );
 
+        if (!driver_stmt->parameter_metadata.empty()) {
+            size_t matched = 0;
+            if (stmt->bound_params != NULL) {
+                HashPosition iterator;
+                zval* entry;
+                for (zend_hash_internal_pointer_reset_ex(stmt->bound_params, &iterator);
+                     (entry = zend_hash_get_current_data_ex(stmt->bound_params, &iterator)) != NULL;
+                     zend_hash_move_forward_ex(stmt->bound_params, &iterator)) {
+                    auto* bound = static_cast<pdo_bound_param_data*>(Z_PTR_P(entry));
+                    matched += driver_stmt->parameter_metadata.count(static_cast<SQLUSMALLINT>(bound->paramno));
+                }
+            }
+            if (matched != driver_stmt->parameter_metadata.size()) {
+                THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA);
+            }
+        }
+
         // prepare for execution by flushing anything remaining in the result set if it wasn't already
         // done before binding parameters
         if( driver_stmt && driver_stmt->executed && !driver_stmt->past_next_result_end ) {
@@ -897,6 +914,123 @@ int pdo_sqlsrv_stmt_get_col_data(_Inout_ pdo_stmt_t *stmt, _In_ int colno, _Inou
     return 0;
 }
 
+namespace {
+
+pdo_sqlsrv_param_metadata parse_parameter_metadata(pdo_sqlsrv_stmt* stmt, zval* value)
+{
+    if (Z_TYPE_P(value) != IS_ARRAY) {
+        THROW_PDO_ERROR(stmt, PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA);
+    }
+    pdo_sqlsrv_param_metadata result;
+    bool has_type = false;
+    bool has_length = false;
+    zend_long length = 0;
+    zend_ulong key;
+    zend_string* name;
+    zval* option;
+    HashPosition iterator;
+    for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(value), &iterator);
+         (option = zend_hash_get_current_data_ex(Z_ARRVAL_P(value), &iterator)) != NULL;
+         zend_hash_move_forward_ex(Z_ARRVAL_P(value), &iterator)) {
+        name = NULL;
+        zend_hash_get_current_key_ex(Z_ARRVAL_P(value), &name, &key, &iterator);
+        if (name != NULL || Z_TYPE_P(option) != IS_LONG) {
+            THROW_PDO_ERROR(stmt, PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA);
+        }
+        zend_long number = Z_LVAL_P(option);
+        switch (key) {
+            case SQLSRV_PARAM_DECLARED_STR_TYPE:
+                if (number != SQL_VARCHAR && number != SQL_WVARCHAR) {
+                    THROW_PDO_ERROR(stmt, PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA);
+                }
+                result.declaration.sql_type = static_cast<SQLSMALLINT>(number);
+                has_type = true;
+                break;
+            case SQLSRV_PARAM_DECLARED_STR_LENGTH:
+                length = number;
+                has_length = true;
+                break;
+            case SQLSRV_ATTR_ENCODING:
+                if (number != SQLSRV_ENCODING_SYSTEM && number != SQLSRV_ENCODING_UTF8 &&
+                    number != SQLSRV_ENCODING_UTF8_VARCHAR) {
+                    THROW_PDO_ERROR(stmt, PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA);
+                }
+                result.encoding = static_cast<SQLSRV_ENCODING>(number);
+                break;
+            default:
+                THROW_PDO_ERROR(stmt, PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA);
+        }
+    }
+    zend_long limit = result.declaration.sql_type == SQL_WVARCHAR ? 4000 : 8000;
+    if (!has_type || !has_length || (length != -1 && (length < 1 || length > limit))) {
+        THROW_PDO_ERROR(stmt, PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA);
+    }
+    result.declaration.size = length == -1 ? SQL_SERVER_MAX_TYPE_SIZE : static_cast<SQLULEN>(length);
+    return result;
+}
+
+void set_parameter_metadata(pdo_stmt_t* stmt, zval* value)
+{
+    pdo_sqlsrv_stmt* driver_stmt = static_cast<pdo_sqlsrv_stmt*>(stmt->driver_data);
+    if (value == NULL || Z_TYPE_P(value) != IS_ARRAY) {
+        THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA);
+    }
+    if (zend_hash_num_elements(Z_ARRVAL_P(value)) != 0 &&
+        (stmt->supports_placeholders == PDO_PLACEHOLDER_NONE || driver_stmt->conn->ce_option.enabled)) {
+        THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_PARAM_METADATA_UNSUPPORTED);
+    }
+    std::map<std::string, zend_ulong> named_positions;
+    if (stmt->bound_param_map != NULL && zend_hash_num_elements(Z_ARRVAL_P(value)) != 0) {
+        zend_ulong position;
+        HashPosition map_iterator;
+        zval* mapped;
+        for (zend_hash_internal_pointer_reset_ex(stmt->bound_param_map, &map_iterator);
+             (mapped = zend_hash_get_current_data_ex(stmt->bound_param_map, &map_iterator)) != NULL;
+             zend_hash_move_forward_ex(stmt->bound_param_map, &map_iterator)) {
+            zend_string* unused;
+            zend_hash_get_current_key_ex(stmt->bound_param_map, &unused, &position, &map_iterator);
+            zend_string* parameter_name = static_cast<zend_string*>(Z_PTR_P(mapped));
+            auto inserted = named_positions.emplace(
+                std::string(ZSTR_VAL(parameter_name), ZSTR_LEN(parameter_name)), position + 1);
+            if (!inserted.second) {
+                // Zero marks a name that cannot identify a unique parameter.
+                inserted.first->second = 0;
+            }
+        }
+    }
+    std::map<SQLUSMALLINT, pdo_sqlsrv_param_metadata> replacement;
+    zend_ulong key;
+    zend_string* name;
+    zval* entry;
+    HashPosition iterator;
+    for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(value), &iterator);
+         (entry = zend_hash_get_current_data_ex(Z_ARRVAL_P(value), &iterator)) != NULL;
+         zend_hash_move_forward_ex(Z_ARRVAL_P(value), &iterator)) {
+        name = NULL;
+        zend_hash_get_current_key_ex(Z_ARRVAL_P(value), &name, &key, &iterator);
+        if (name != NULL) {
+            std::string canonical(ZSTR_VAL(name), ZSTR_LEN(name));
+            if (canonical.empty() || canonical[0] != ':') {
+                canonical.insert(0, ":");
+            }
+            auto found = named_positions.find(canonical);
+            if (found == named_positions.end() || found->second == 0) {
+                THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA);
+            }
+            key = found->second;
+        }
+        if (key < 1 || key > SQL_SERVER_MAX_PARAMS ||
+            replacement.count(static_cast<SQLUSMALLINT>(key - 1)) != 0) {
+            THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA);
+        }
+        replacement.emplace(static_cast<SQLUSMALLINT>(key - 1), parse_parameter_metadata(driver_stmt, entry));
+    }
+    driver_stmt->parameter_metadata.swap(replacement);
+    driver_stmt->parameter_sizes.clear();
+}
+
+}
+
 // pdo_sqlsrv_stmt_set_attr
 // Maps to the PDOStatement::setAttribute. Sets the attribute on a statement.
 // Parameters:
@@ -917,6 +1051,10 @@ int pdo_sqlsrv_stmt_set_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
     try {
 
         switch( attr ) {
+
+            case SQLSRV_ATTR_PARAM_METADATA:
+                set_parameter_metadata(stmt, val);
+                break;
 
             case SQLSRV_ATTR_DIRECT_QUERY:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_DQ_ATTR_AT_PREPARE_ONLY );
@@ -999,6 +1137,21 @@ int pdo_sqlsrv_stmt_get_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
     try {
 
         switch( attr ) {
+
+            case SQLSRV_ATTR_PARAM_METADATA:
+                array_init(return_value);
+                for (const auto& item : driver_stmt->parameter_metadata) {
+                    zval metadata;
+                    array_init(&metadata);
+                    add_index_long(&metadata, SQLSRV_PARAM_DECLARED_STR_TYPE, item.second.declaration.sql_type);
+                    add_index_long(&metadata, SQLSRV_PARAM_DECLARED_STR_LENGTH,
+                        item.second.declaration.size == SQL_SERVER_MAX_TYPE_SIZE ? -1 : static_cast<zend_long>(item.second.declaration.size));
+                    if (item.second.encoding != SQLSRV_ENCODING_DEFAULT) {
+                        add_index_long(&metadata, SQLSRV_ATTR_ENCODING, item.second.encoding);
+                    }
+                    add_index_zval(return_value, item.first + 1, &metadata);
+                }
+                break;
 
             case SQLSRV_ATTR_DIRECT_QUERY:
             {
@@ -1290,6 +1443,12 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
             case PDO_PARAM_EVT_ALLOC:
                 {
                     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>(stmt->driver_data);
+                    if (param->is_param && Z_TYPE(param->driver_params) == IS_ARRAY) {
+                        parse_parameter_metadata(driver_stmt, &param->driver_params);
+                        if (stmt->supports_placeholders == PDO_PLACEHOLDER_NONE || driver_stmt->conn->ce_option.enabled) {
+                            THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_PARAM_METADATA_UNSUPPORTED);
+                        }
+                    }
                     if (driver_stmt->conn->ce_option.enabled) {
                         if (driver_stmt->direct_query) {
                             THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_CE_DIRECT_QUERY_UNSUPPORTED);
@@ -1316,7 +1475,7 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                         break;
                     }
 
-                    sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
+                    pdo_sqlsrv_stmt* driver_stmt = static_cast<pdo_sqlsrv_stmt*>(stmt->driver_data);
                     SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_param_hook: driver_data object was null" );
 
                     // prepare for binding parameters by flushing anything remaining in the result set
@@ -1456,19 +1615,37 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                         encoding = driver_stmt->conn->encoding();
                     }
 
-                    // Beginning with PHP7.2 the user can specify whether to use PDO_PARAM_STR_CHAR or PDO_PARAM_STR_NATL
-                    // But this extended type will be ignored in real prepared statements, so the encoding deliberately
-                    // set in the statement or driver options will still take precedence
+                    pdo_sqlsrv_param_metadata binding_metadata;
+                    pdo_sqlsrv_param_metadata* metadata = NULL;
+                    auto stored = driver_stmt->parameter_metadata.find(static_cast<SQLUSMALLINT>(param->paramno));
+                    if (stored != driver_stmt->parameter_metadata.end()) {
+                        metadata = &stored->second;
+                        if (metadata->encoding != SQLSRV_ENCODING_DEFAULT) {
+                            encoding = metadata->encoding;
+                        }
+                    }
                     if( !Z_ISUNDEF(param->driver_params) ) {
-                        CHECK_CUSTOM_ERROR( Z_TYPE( param->driver_params ) != IS_LONG, driver_stmt,
+                        CHECK_CUSTOM_ERROR( Z_TYPE(param->driver_params) != IS_LONG && Z_TYPE(param->driver_params) != IS_ARRAY, driver_stmt,
                                             PDO_SQLSRV_ERROR_INVALID_DRIVER_PARAM ) {
                             throw pdo::PDOException();
                         }
-                        CHECK_CUSTOM_ERROR( pdo_type != PDO_PARAM_STR && pdo_type != PDO_PARAM_LOB, driver_stmt,
+                        CHECK_CUSTOM_ERROR( pdo_type != PDO_PARAM_STR && pdo_type != PDO_PARAM_LOB &&
+                                            !(pdo_type == PDO_PARAM_NULL && Z_TYPE(param->driver_params) == IS_ARRAY), driver_stmt,
                                             PDO_SQLSRV_ERROR_INVALID_DRIVER_PARAM_TYPE, param->paramno + 1, NULL) {
                             throw pdo::PDOException();
                         }
-                        encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL( param->driver_params ));
+                        if (Z_TYPE(param->driver_params) == IS_ARRAY) {
+                            binding_metadata = parse_parameter_metadata(driver_stmt, &param->driver_params);
+                            metadata = &binding_metadata;
+                            // A binding declaration replaces the whole statement entry.
+                            encoding = driver_stmt->encoding() == SQLSRV_ENCODING_DEFAULT ?
+                                driver_stmt->conn->encoding() : driver_stmt->encoding();
+                            if (metadata->encoding != SQLSRV_ENCODING_DEFAULT) {
+                                encoding = metadata->encoding;
+                            }
+                        } else {
+                            encoding = static_cast<SQLSRV_ENCODING>(Z_LVAL(param->driver_params));
+                        }
 
                         switch( encoding ) {
                             case SQLSRV_ENCODING_SYSTEM:
@@ -1483,9 +1660,29 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                         }
                     }
 
+                    sqlsrv_string_declaration* declaration = metadata == NULL ? NULL : &metadata->declaration;
+                    zval* value = &param->parameter;
+                    ZVAL_DEREF(value);
+                    bool string_input = direction == SQL_PARAM_INPUT &&
+                        (pdo_type == PDO_PARAM_STR || pdo_type == PDO_PARAM_NULL) &&
+                        (Z_TYPE_P(value) == IS_STRING || Z_TYPE_P(value) == IS_NULL) &&
+                        encoding != SQLSRV_ENCODING_BINARY;
+                    if (declaration != NULL && (!string_input || driver_stmt->conn->ce_option.enabled ||
+                        stmt->supports_placeholders == PDO_PLACEHOLDER_NONE)) {
+                        THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_PARAM_METADATA_UNSUPPORTED);
+                    }
+                    if (declaration == NULL && string_input && driver_stmt->default_str_length != 0) {
+                        SQLSMALLINT inferred = encoding == SQLSRV_ENCODING_UTF8 ? SQL_WVARCHAR : SQL_VARCHAR;
+                        auto& sizing = driver_stmt->parameter_sizes[static_cast<SQLUSMALLINT>(param->paramno)];
+                        if (sizing.sql_type != inferred) {
+                            sizing = sqlsrv_string_declaration(inferred, driver_stmt->default_str_length, true);
+                        }
+                        declaration = &sizing;
+                    }
+
                     // and bind the parameter
                     core_sqlsrv_bind_param( driver_stmt, static_cast<SQLUSMALLINT>( param->paramno ), static_cast<SQLSMALLINT>(direction), &(param->parameter) , php_out_type, encoding,
-                                            sql_type, column_size, decimal_digits);
+                                            sql_type, column_size, decimal_digits, declaration);
                 }
                 break;
             // undo any work done by the core layer after the statement is executed
