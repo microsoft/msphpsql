@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $pipeline = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..\azure-pipelines.yml') -Raw
-$selection = [regex]::Match($pipeline, '(?m)^\s*\$vsVersion = if .+$').Value.Trim()
+$selection = [regex]::Match($pipeline, '(?m)^(?<indent>[ \t]*)\$vsVersion = switch -Regex \(\$version\) \{(?s:.*?)^\k<indent>\}').Value.Trim()
 $download = [regex]::Match($pipeline, '(?m)^\s*\$phpUrl = "https://windows\.php\.net/downloads/releases/php-.+$').Value.Trim()
 $buildVersion = [regex]::Match($pipeline, '(?m)^\s*\$env:VERSION = .+$').Value.Trim()
 if (-not $selection -or -not $download -or -not $buildVersion) {
@@ -15,10 +15,19 @@ Describe 'Windows PHP release selection' {
         $windowsJob | Should Match "vmImage: 'windows-2022'"
     }
 
-    It 'selects VS17 for an ordinary PHP 8.5 release' {
-        $version = '8.5.0'
+    It 'selects <compiler> for supported PHP <version>' -TestCases @(
+        @{ version = '8.4.27'; compiler = 'vs17' }
+        @{ version = '8.5.12'; compiler = 'vs17' }
+        @{ version = '8.6.0'; compiler = 'vs18' }
+        @{ version = '8.6.0alpha1'; compiler = 'vs18' }
+        @{ version = '8.6.0beta3'; compiler = 'vs18' }
+        @{ version = '8.6.0RC7'; compiler = 'vs18' }
+    ) {
+        param($version, $compiler)
         . ([scriptblock]::Create($selection))
-        $vsVersion | Should Be 'vs17'
+        . ([scriptblock]::Create($download))
+        $vsVersion | Should Be $compiler
+        $phpUrl | Should Be "https://windows.php.net/downloads/releases/php-$version-nts-Win32-$compiler-x64.zip"
     }
 
     It 'accepts the repackaged release and preserves its complete archive name' {
@@ -30,14 +39,14 @@ Describe 'Windows PHP release selection' {
         $phpUrl | Should Be 'https://windows.php.net/downloads/releases/php-8.5.12-1-nts-Win32-vs17-x64.zip'
     }
 
-    It 'preserves the existing earlier-version compiler selection' {
-        $version = '8.3.30-2'
-        . ([scriptblock]::Create($selection))
-        $vsVersion | Should Be 'vs16'
-    }
-
-    It 'does not choose a compiler silently for malformed version data' {
-        $version = 'invalid-1'
+    It 'rejects unsupported or malformed PHP <version> without selecting a compiler' -TestCases @(
+        @{ version = '8.3.30-2' }
+        @{ version = '7.4.33' }
+        @{ version = '8.7.0' }
+        @{ version = '9.0.0' }
+        @{ version = 'invalid-1' }
+    ) {
+        param($version)
         { . ([scriptblock]::Create($selection)) } | Should Throw
     }
 

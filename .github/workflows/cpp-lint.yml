@@ -5,10 +5,12 @@ on:
     branches: [ "dev", "release" ]
     paths:
       - 'source/**'
+      - '.github/workflows/cpp-lint.yml'
   pull_request:
     branches: [ "dev", "release" ]
     paths:
       - 'source/**'
+      - '.github/workflows/cpp-lint.yml'
 
 permissions:
   contents: read
@@ -26,7 +28,9 @@ jobs:
 
       - name: Run cppcheck
         run: |
-          cppcheck \
+          for php_version in 80400 80500 80600; do
+            cppcheck \
+            -DPHP_VERSION_ID="$php_version" \
             --enable=warning,performance,portability \
             --error-exitcode=1 \
             --suppress=missingIncludeSystem \
@@ -52,3 +56,4 @@ jobs:
             source/shared \
             source/sqlsrv \
             source/pdo_sqlsrv
+          done
