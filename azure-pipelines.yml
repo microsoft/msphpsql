@@ -112,12 +112,16 @@ jobs:
         brew trust --tap microsoft/mssql-release
       fi
       brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
+      # Check certificate bootstrap before spending time compiling dependent formulae.
+      if ! brew install --verbose ca-certificates; then
+        echo "##[warning]Certificate installation failed; running its post-install step once with noninteractive diagnostics."
+        HOMEBREW_DISABLE_DEBREW=1 brew postinstall --debug --verbose ca-certificates
+      fi
       if ! HOMEBREW_ACCEPT_EULA=Y brew install --verbose \
         microsoft/mssql-release/msodbcsql18 \
         microsoft/mssql-release/mssql-tools18; then
-        echo "##[warning]ODBC installation failed; retrying the reported certificate/OpenSSL post-install steps once."
-        brew postinstall --verbose ca-certificates
-        brew postinstall --verbose openssl@4
+        echo "##[warning]ODBC installation failed; retrying the reported OpenSSL post-install step once."
+        HOMEBREW_DISABLE_DEBREW=1 brew postinstall --debug --verbose openssl@4
         HOMEBREW_ACCEPT_EULA=Y brew install --verbose \
           microsoft/mssql-release/msodbcsql18 \
           microsoft/mssql-release/mssql-tools18
