@@ -372,7 +372,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stm
 
 void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _Inout_ zval* param_z,
                              _In_ SQLSRV_PHPTYPE php_out_type, _Inout_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
-                             _Inout_ SQLSMALLINT decimal_digits)
+                             _Inout_ SQLSMALLINT decimal_digits, _Inout_opt_ sqlsrv_string_declaration* declaration)
 {
     // check is only < because params are 0 based
     CHECK_CUSTOM_ERROR(param_num >= SQL_SERVER_MAX_PARAMS, stmt, SQLSRV_ERROR_MAX_PARAMS_EXCEEDED, param_num + 1, NULL) {
@@ -387,6 +387,10 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
 
     sqlsrv_param* param_ptr = stmt->params_container.find_param(param_num, (direction == SQL_PARAM_INPUT));
     try {
+        if (declaration != NULL) {
+            sql_type = declaration->sql_type;
+            column_size = declaration->size;
+        }
         if (param_ptr == NULL) {
             sqlsrv_malloc_auto_ptr<sqlsrv_param> new_param;
             if (direction == SQL_PARAM_INPUT) {
@@ -415,6 +419,16 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         }
 
         SQLSRV_ASSERT(param_ptr != NULL, "core_sqlsrv_bind_param: param_ptr is null. Something went wrong.");
+
+        // Refresh declarations when rebinding, including a return to inference or an encoding override.
+        if (declaration != NULL || param_ptr->declaration_overridden ||
+            (direction == SQL_PARAM_INPUT && param_ptr->sql_data_type != SQL_SS_TABLE && param_ptr->encoding != encoding)) {
+            param_ptr->sql_data_type = sql_type;
+            param_ptr->column_size = column_size;
+            param_ptr->encoding = encoding;
+            param_ptr->decimal_digits = decimal_digits;
+            param_ptr->declaration_overridden = declaration != NULL;
+        }
 
         bool result = param_ptr->prepare_param(param_ref, param_z);
         if (!result && direction == SQL_PARAM_INPUT_OUTPUT) {
@@ -446,6 +460,48 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
 
         // Get all necessary values to prepare for SQLBindParameter
         param_ptr->process_param(stmt, param_z);
+        if (declaration != NULL && !declaration->grow && sql_type == SQL_VARCHAR &&
+            declaration->size != SQL_SERVER_MAX_TYPE_SIZE && Z_TYPE_P(param_z) == IS_STRING) {
+            // ODBC may silently truncate after Unicode-to-VARCHAR conversion. Exact bounds
+            // require parameter-collation metadata, which ODBC does not expose here.
+            for (size_t i = 0; i < Z_STRLEN_P(param_z); ++i) {
+                CHECK_CUSTOM_ERROR(static_cast<unsigned char>(Z_STRVAL_P(param_z)[i]) >= 0x80,
+                    stmt, SQLSRV_ERROR_STRING_DECLARATION_UNSUPPORTED) {
+                    throw core::CoreException();
+                }
+            }
+        }
+        if (declaration != NULL && declaration->grow) {
+            SQLULEN required = 0;
+            if (Z_TYPE_P(param_z) == IS_STRING) {
+                if (sql_type == SQL_WVARCHAR && param_ptr->c_data_type == SQL_C_WCHAR) {
+                    required = param_ptr->buffer_length / sizeof(SQLWCHAR);
+                } else {
+                    // For Unicode-to-VARCHAR conversion UTF-8 byte length is a conservative bound
+                    // across SQL Server code pages. ODBC still owns the collation conversion.
+                    required = Z_STRLEN_P(param_z);
+                    if (sql_type == SQL_VARCHAR && encoding == SQLSRV_ENCODING_SYSTEM) {
+                        // A non-ASCII source byte can expand when converted from the client code
+                        // page to a UTF-8 SQL collation; do not cap the declaration at source bytes.
+                        for (size_t i = 0; i < Z_STRLEN_P(param_z); ++i) {
+                            if (static_cast<unsigned char>(Z_STRVAL_P(param_z)[i]) >= 0x80) {
+                                required += 3;
+                            }
+                        }
+                    }
+                }
+            }
+            SQLULEN limit = sql_type == SQL_WVARCHAR ? SQL_SERVER_MAX_FIELD_SIZE / sizeof(SQLWCHAR) : SQL_SERVER_MAX_FIELD_SIZE;
+            if (declaration->size != SQL_SERVER_MAX_TYPE_SIZE) {
+                if (required > declaration->size) {
+                    declaration->size = required;
+                }
+                if (declaration->size > limit) {
+                    declaration->size = SQL_SERVER_MAX_TYPE_SIZE;
+                }
+            }
+            param_ptr->column_size = declaration->size;
+        }
         param_ptr->bind_param(stmt);
 
         // When calling SQLDescribeParam() on a parameter targeting a Datetime column, the return values for ParameterType, ColumnSize and DecimalDigits are SQL_TYPE_TIMESTAMP, 23, and 3 respectively.

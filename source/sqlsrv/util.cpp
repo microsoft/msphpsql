@@ -477,6 +477,10 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_ODBC_DIAGNOSTICS_UNAVAILABLE,
         { IMSSP, (SQLCHAR*) "The ODBC operation failed. Diagnostic information is not available from the driver.", -131, false }
     },
+    {
+        SQLSRV_ERROR_STRING_DECLARATION_UNSUPPORTED,
+        { IMSSP, (SQLCHAR*) "Bounded VARCHAR declarations currently support ASCII input only. Use NVARCHAR, VARCHAR(MAX), or automatic sizing for non-ASCII input.", -132, false }
+    },
 
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
