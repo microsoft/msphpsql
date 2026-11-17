@@ -83,7 +83,7 @@ try {
                 // check the case when fetching as PDO::PARAM_STR or PDO::PARAM_LOB
                 // with or without AE: should work
                 } else {
-                    if ($pdoParamType == "PDO::PARAM_LOB") {
+                    if (PHP_VERSION_ID >= 80100 && $pdoParamType == "PDO::PARAM_LOB") {
                         // Starting with PHP 8.1 fetching as PDO::PARAM_LOB will return a resource obj
                         $det = fread($det, 8192);
                         $rand = fread($rand, 8192);

@@ -8,7 +8,7 @@ parameter encoding is UTF-8.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_old_php.inc'); ?>
 --FILE--
 <?php
 require_once("MsSetup.inc");

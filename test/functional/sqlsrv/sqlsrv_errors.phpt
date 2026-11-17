@@ -8,14 +8,20 @@ sqlsrv_close returns true even if an error happens.
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-    // Include driver warnings in the same assertions as argument errors.
+    // When testing with PHP 8.0 it throws a TypeError instead of a warning. Thus implement a custom 
+    // warning handler such that with PHP 7.x the warning would be handled to throw a TypeError.
+    // Sometimes the error messages from PHP 8.0 may be different and have to be handled differently.
     function warningHandler($errno, $errstr) 
     { 
         throw new TypeError($errstr);
     }
     
-    function compareMessages($err, $expected)
+    function compareMessages($err, $exp8x, $exp7x, $exp83 = "") 
     {
+        $expected = (PHP_MAJOR_VERSION == 8) ? $exp8x : $exp7x;
+        if($exp83 && version_compare(PHP_VERSION, "8.3", ">=")) {
+            $expected = $exp83;
+        }
         if (!fnmatch($expected, $err->getMessage())) {
             echo $err->getMessage() . PHP_EOL;
         }
@@ -36,6 +42,8 @@ sqlsrv_close returns true even if an error happens.
         }
     } catch (TypeError $e) {
         compareMessages($e, 
+                        "sqlsrv_close(): Argument #1 (\$conn) must be of type resource, bool given", 
+                        "sqlsrv_close() expects parameter 1 to be resource, bool* given",
                         "sqlsrv_close(): Argument #1 (\$conn) must be of type resource, false given",);
     }
     
@@ -113,7 +121,8 @@ sqlsrv_close returns true even if an error happens.
         }
     } catch (TypeError $e) {
         compareMessages($e, 
-                    "sqlsrv_free_stmt(): Argument #1 (\$stmt) must be of type resource, null given");
+                    "sqlsrv_free_stmt(): Argument #1 (\$stmt) must be of type resource, null given", 
+                    "sqlsrv_free_stmt() expects parameter 1 to be resource, null given");       
     }
     
     try {
@@ -134,7 +143,8 @@ sqlsrv_close returns true even if an error happens.
         }
     } catch (TypeError $e) {
         compareMessages($e, 
-                    "sqlsrv_free_stmt(): Argument #1 (\$stmt) must be of type resource, int given");
+                    "sqlsrv_free_stmt(): Argument #1 (\$stmt) must be of type resource, int given", 
+                    "sqlsrv_free_stmt() expects parameter 1 to be resource, int* given");       
     }
 
     print_r(sqlsrv_errors());
@@ -162,7 +172,8 @@ sqlsrv_close returns true even if an error happens.
         }
     } catch (TypeError $e) {
         compareMessages($e, 
-                    "sqlsrv_close(): Argument #1 (\$conn) must be of type resource, null given");
+                    "sqlsrv_close(): Argument #1 (\$conn) must be of type resource, null given", 
+                    "sqlsrv_close() expects parameter 1 to be resource, null given");       
     }
 
     try {
@@ -172,7 +183,8 @@ sqlsrv_close returns true even if an error happens.
         }
     } catch (TypeError $e) {
         compareMessages($e, 
-                    "sqlsrv_close(): Argument #1 (\$conn) must be of type resource, int given");
+                    "sqlsrv_close(): Argument #1 (\$conn) must be of type resource, int given", 
+                    "sqlsrv_close() expects parameter 1 to be resource, int* given");       
     }
 
     print_r(sqlsrv_errors());

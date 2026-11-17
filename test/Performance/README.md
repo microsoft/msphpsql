@@ -5,7 +5,7 @@ The PHP zip file can be downloaded from <http://php.net/downloads.php>.
 The SQLSRV and PDO_SQLSRV driver binaries can be downloaded from <https://github.com/Microsoft/msphpsql/releases>.
 
 ### Windows
-Install the Visual C++ redistributable matching the selected PHP build before running the following commands.
+Install Visual Studio 2015 redistributable before running the following commands.
 Run `Windows PowerShell` as administrator.
 
     Set-ExecutionPolicy Unrestricted
@@ -73,9 +73,16 @@ An elevated end-to-end installation and effective-permission checks still
 require a disposable Windows benchmark machine; unit checks do not establish
 that an existing host's installation is safe.
 
-### Linux and macOS
-Use the [installation guide](../../Linux-mac-install.md) to provision PHP 8.4 or 8.5 and matching drivers, or build PHP 8.6 and both drivers for prerelease qualification. Install the Composer dependencies from this directory. The old PHP 7-only Unix provisioning script has been removed; historical benchmark results and platform labels are not current support claims.
+### Ubuntu 16
+    sudo env "PATH=$PATH" bash setup_env_unix.sh Ubuntu16 <PHP_VERSION - 7.x.y> <PHP_THREAD - ts or nts> <absolute path to the SQLSRV driver so> <absolute path to the PDO_SQLSRV driver so>
+### RedHat 7
+    sudo env "PATH=$PATH" bash setup_env_unix.sh RedHat7 <PHP_VERSION - 7.x.y> <PHP_THREAD - ts or nts> <absolute path to the SQLSRV driver so> <absolute path to the PDO_SQLSRV driver so>
+### SUSE 12
+    sudo env "PATH=$PATH" bash setup_env_unix.sh SUSE12 <PHP_VERSION - 7.x.y> <PHP_THREAD - ts or nts> <absolute path to the SQLSRV driver so> <absolute path to the PDO_SQLSRV driver so>
+### MacOS 10.12 Sierra
+`brew` cannot be run with `sudo` on Sierra. Either enable passwordless `sudo` on the machine or enter the password when prompted. 
 
+    bash setup_env_unix.sh Sierra <PHP_VERSION - 7.x.y> <PHP_THREAD - ts or nts> <absolute path to the SQLSRV driver so> <absolute path to the PDO_SQLSRV driver so>
 ## Run benchmarks
 PHPBench is used to run the benchmarks. Visit http://phpbench.readthedocs.io/en/latest/introduction.html to have an idea how the tool works.
 

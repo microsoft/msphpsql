@@ -2,7 +2,7 @@
 """
  Description: This script intended to run the Performance Tests on Windows, Linux and Mac. 
  Requirements: 
-              Follow README.md to provision PHP and the drivers before invoking this script.
+              Run setup_env_unix.sh( Linux and Mac ) or setup_env_windows.ps1( Windows ) before invoking  this script.
               modify lib/connect.php with the credentials to connect to the test database.
 """
 

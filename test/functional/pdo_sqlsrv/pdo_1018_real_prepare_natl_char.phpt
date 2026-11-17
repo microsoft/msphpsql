@@ -8,7 +8,7 @@ the statement encoding or the connection one, which is by default UTF-8.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_old_php.inc'); ?>
 --FILE--
 <?php
 require_once("MsSetup.inc");

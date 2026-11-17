@@ -876,8 +876,16 @@ PHP_FUNCTION( sqlsrv_close )
 
         conn->set_func(_FN_);
 
-        // Invalidate remaining references so subsequent sqlsrv calls reject them.
+        // cause any variables still holding a reference to this to be invalid so they cause
+        // an error when passed to a sqlsrv function.  There's nothing we can do if the
+        // removal fails, so we just log it and move on.
+#if PHP_VERSION_ID < 80000
+        if (zend_list_close(Z_RES_P(conn_r)) == FAILURE) {
+            LOG(SEV_ERROR, "Failed to remove connection resource %1!d!", Z_RES_HANDLE_P(conn_r));
+        }
+#else
         zend_list_close(Z_RES_P(conn_r));
+#endif
 
         // when conn_r is first parsed in zend_parse_parameters, conn_r becomes a zval that points to a zend_resource with a refcount of 2
         // need to DELREF here so the refcount becomes 1 and conn_r can be appropriate destroyed by the garbage collector when it goes out of scope
@@ -1335,7 +1343,13 @@ PHP_FUNCTION( sqlsrv_query )
 
 void free_stmt_resource( _Inout_ zval* stmt_z )
 {
+#if PHP_VERSION_ID < 80000
+    if (FAILURE == zend_list_close(Z_RES_P(stmt_z))) {
+        LOG(SEV_ERROR, "Failed to remove stmt resource %1!d!", Z_RES_HANDLE_P(stmt_z));
+    }
+#else
     zend_list_close(Z_RES_P(stmt_z));
+#endif
 
     ZVAL_NULL( stmt_z );
     zval_ptr_dtor(stmt_z);
@@ -1387,7 +1401,14 @@ void sqlsrv_conn_close_stmts( _Inout_ ss_sqlsrv_conn* conn )
         stmt->conn = NULL;
 
         // this would call the destructor on the statement.
+        // There's nothing we can do if the removal fails, so we just log it and move on.
+#if PHP_VERSION_ID < 80000
+        if (zend_list_close(Z_RES_P(rsrc_ptr)) == FAILURE) {
+            LOG(SEV_ERROR, "Failed to remove statement resource %1!d! when closing the connection", Z_RES_HANDLE_P(rsrc_ptr));
+        }
+#else
         zend_list_close(Z_RES_P(rsrc_ptr));
+#endif
     } ZEND_HASH_FOREACH_END();
 #pragma warning(pop)
 
@@ -1562,7 +1583,7 @@ void validate_conn_options( _Inout_ sqlsrv_context& ctx, _In_ zval* user_options
                     throw ss::SSException();
                 }
                 if ( key != NULL ) {
-                    // Length of the key string does not include the null terminator.
+                    // Length of the key string does not include the null terminator in PHP7, +1 has to be added
                     size_t key_len = ZSTR_LEN( key ) + 1;
                     if ( key_len == sizeof( SSConnOptionNames::UID ) && !stricmp( ZSTR_VAL( key ), SSConnOptionNames::UID )) {
 

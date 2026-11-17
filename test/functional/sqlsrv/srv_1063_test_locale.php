@@ -154,6 +154,11 @@ if (!$stmt) {
 while (sqlsrv_fetch($stmt)) {
     $value = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_FLOAT);
     $expected = 3.14159;
+    if (PHP_MAJOR_VERSION < 8) {
+        if ($setLocaleInfo > 0 && $english === false) {
+            $expected = floatval($pi);
+        }
+    }
     if ($value != $expected) {
         echo "Expected: '$expected' but got '$value'\n";
     }

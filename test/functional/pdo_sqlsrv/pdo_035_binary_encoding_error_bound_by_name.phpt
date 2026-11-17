@@ -30,10 +30,14 @@ try {
     $stmt->execute();
     $stmt->fetch(PDO::FETCH_BOUND);
     
-    // $val1 is a stream object
-    if (!feof($val1)) {
-        $str = fread($val1, 8192);
-        var_dump($str === $value);
+    if (PHP_VERSION_ID < 80100) {
+        var_dump($val1 === $value);
+    } else {
+        // $val1 is a stream object
+        if (!feof($val1)) {
+            $str = fread($val1, 8192);
+            var_dump($str === $value);
+        }
     }
 
     // Close connection

@@ -6,7 +6,7 @@ PDO::PARAM_STR_CHAR will affect how PDO::quote() works.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_old_php.inc'); ?>
 --FILE--
 <?php
 require_once("MsSetup.inc");
@@ -58,7 +58,11 @@ try {
     $conn->setAttribute(PDO::ATTR_DEFAULT_STR_PARAM, PDO::PARAM_STR_CHAR);
     
     // Deprecated: PDO::quote(): Passing null to parameter #1 ($string) of type string is being deprecated
-    var_dump($conn->quote('', PDO::PARAM_NULL));
+    if (PHP_VERSION_ID < 80100) {
+        var_dump($conn->quote(null, PDO::PARAM_NULL));
+    } else {
+        var_dump($conn->quote('', PDO::PARAM_NULL));
+    }
     var_dump($conn->quote('\'', PDO::PARAM_STR));
     var_dump($conn->quote('foo', PDO::PARAM_STR));
     var_dump($conn->quote('foo', PDO::PARAM_STR | PDO::PARAM_STR_CHAR));

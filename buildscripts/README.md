@@ -6,14 +6,15 @@ Install the Visual Studio version appropriate to your PHP version, including the
 
 | PHP version | Compiler | Visual Studio | SDK launcher |
 |-------------|----------|---------------|--------------|
+| 7.x through 8.3 (preserved mapping) | `vs16` | 2019 | `phpsdk-vs16-<arch>.bat` |
 | 8.4 and 8.5 | `vs17` | 2022 | `phpsdk-vs17-<arch>.bat` |
-| 8.6 | `vs18` | 2026 | `phpsdk-vs18-<arch>.bat` |
+| 8.6 and later | `vs18` | 2026 | `phpsdk-vs18-<arch>.bat` |
 
-Here `<arch>` is `x64` or `x86`. Compiler selection uses the validated major/minor version, including for prereleases. PHP sources and build outputs use the corresponding `php-sdk\phpdev\<compiler>\<arch>` directory.
+Here `<arch>` is `x64` or `x86`. Compiler selection uses integer major/minor components, including for prereleases. PHP sources and build outputs use the corresponding `php-sdk\phpdev\<compiler>\<arch>` directory.
 
-PHP 8.6 / Visual Studio 2026 handling is **initial development compatibility**, not a claim of production support or completed toolchain validation. It requires a PHP SDK with the matching `vs18` launcher and compatible dependencies. This branch accepts only PHP 8.4, 8.5 and 8.6; other versions are rejected.
+PHP 8.6 / Visual Studio 2026 handling is **initial development compatibility**, not a claim of production support or completed toolchain validation. It requires a PHP SDK with the matching `vs18` launcher and compatible dependencies. The preserved older mappings describe script behavior, not the driver's current supported PHP versions.
 
-The current compatibility qualification campaign targets PHP **8.4.27**, **8.5.12**, and **8.6.0RC7**. Pass the exact target through `--PHPVER`; this list does not configure the repository CI matrices or imply completed cross-platform qualification. Rebuild both extensions against the target PHP headers: PHP 8.6.0RC7 uses module API `20261112`.
+The current compatibility qualification campaign targets PHP **8.4.27**, **8.5.12**, and **8.6.0RC7**. PHP **8.3.36** was included in earlier campaigns; its compiler mapping and compatibility paths remain unchanged. Pass the exact target through `--PHPVER`; this list does not configure the repository CI matrices or imply completed cross-platform qualification. Rebuild both extensions against the target PHP headers: PHP 8.6.0RC7 uses module API `20261112`, so binaries built for RC5's module API `20260924` cannot be reused.
 
 To use the sample build scripts `builddrivers.py` and `buildtools.py`, install Python 3.x and Git for Windows. If `git` is unrecognized in a regular command prompt, make sure the environment path is set up correctly.
 
@@ -21,7 +22,7 @@ To use the sample build scripts `builddrivers.py` and `buildtools.py`, install P
 
 You must first be able to build PHP source without including our PHP extensions. Visit [PHP SDK page](https://github.com/php/php-sdk-binary-tools) for instructions on building PHP in Windows.
 
-Use Visual Studio 2022 for PHP 8.4/8.5 or Visual Studio 2026 for PHP 8.6. The drivers for Windows that are published for each release (including previews) are digitally signed. You are recommended to sign the binaries you have compiled locally for your own development or testing purposes, using tools like Authenticode. It verifies the publisher's identity and prevents malicious actors from posing as legitimate developers.
+The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 8.2+ using Visual Studio 2019 or Visual Studio 2022. The drivers for Windows that are published for each release (including previews) are digitally signed. You are recommended to sign the binaries you have compiled locally for your own development or testing purposes, using tools like Authenticode. It verifies the publisher's identity and prevents malicious actors from posing as legitimate developers.
 
 ### Manually building from source 
 
@@ -52,7 +53,7 @@ The sample build scripts, `builddrivers.py` and `buildtools.py`, can be used to 
 
 #### Overview
 
-The shared version validator accepts PHP 8.4, 8.5 and 8.6 in `major.minor` or `major.minor.patch` form, plus prereleases. For an alpha, beta, or RC version, use the exact PHP tag name without the `php-` prefix:
+The shared version validator accepts PHP 7 or later in `major.minor` or `major.minor.patch` form, plus prereleases. For an alpha, beta, or RC version, use the exact PHP tag name without the `php-` prefix:
 
 | Input | Generated PHP source tag |
 |-------|--------------------------|
@@ -88,6 +89,7 @@ PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably
         * `py builddrivers.py --PHPVER=8.6.0RC7 --ARCH=x64 --THREAD=nts --DRIVER=all --SOURCE=C:\local\source`
         * `py builddrivers.py --PHPVER=8.5.12 --ARCH=x64 --THREAD=nts --DRIVER=all --SOURCE=C:\local\source`
         * `py builddrivers.py --PHPVER=8.4.27 --ARCH=x64 --THREAD=nts --DRIVER=sqlsrv --SOURCE=C:\local\source`
+        * `py builddrivers.py --PHPVER=8.3.36 --ARCH=x86 --THREAD=ts --DEBUG`
 
 5. Based on the given configuration, if the script detects the presence of the PHP source directory, you can choose whether to rebuild, clean or superclean:
     * `rebuild` to build again using the same configuration (32 bit, thread safe, etc.)

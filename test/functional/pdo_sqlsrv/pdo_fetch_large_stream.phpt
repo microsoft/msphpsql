@@ -23,7 +23,7 @@ $nstrValue = str_repeat("ÃÜðßZZýA©", 200);
 
 function checkData($actual, $expected)
 {
-    if (is_resource($actual)) {
+    if (PHP_VERSION_ID >= 80100 && is_resource($actual)) {
         $actual = fread($actual, 8192);
     }
     trace("Actual:\n$actual\n");

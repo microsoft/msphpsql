@@ -82,7 +82,11 @@ function fetchWithStyle($conn, $tbname, $style)
             } catch (PDOException $err) {
                 print_r($err);
             } catch (Error $err) {
-                $message = "Undefined constant PDO::FETCH_UNKNOWN";
+                if (PHP_MAJOR_VERSION == 8) {
+                    $message = "Undefined constant PDO::FETCH_UNKNOWN";
+                } else {
+                    $message = "Undefined class constant 'FETCH_UNKNOWN'";
+                }
                 if ($err->getMessage() !== $message) {
                     echo $err->getMessage() . PHP_EOL;
                 }
