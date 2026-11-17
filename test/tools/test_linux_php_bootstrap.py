@@ -89,7 +89,7 @@ class LinuxPHPBootstrapTests(unittest.TestCase):
         result = self.run_bootstrap("success")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("BOOTSTRAP_VERIFIED", result.stdout)
-        self.assertIn("Acquire::Retries=3 update", result.stderr)
+        self.assertIn("Acquire::Retries=3 -o APT::Update::Error-Mode=any update", result.stderr)
         self.assertIn("Acquire::Retries=3 install -y php8.5-cli php8.5-dev", result.stderr)
 
     def test_failed_installation_cannot_reach_alternatives_or_build(self):

@@ -44,6 +44,24 @@ jobs:
   - script: |
       set -e
       echo "Installing prerequisites via Homebrew..."
+
+      brew_prefix="$(brew --prefix)"
+      case "$brew_prefix" in
+        /usr/local|/opt/homebrew) ;;
+        *) echo "##[error]Unexpected Homebrew prefix."; exit 1 ;;
+      esac
+      brew_libexec="$brew_prefix/libexec"
+      if [[ -L "$brew_libexec" || ( -e "$brew_libexec" && ! -d "$brew_libexec" ) ]]; then
+        echo "##[error]Homebrew libexec must be a real directory, not a symlink or file."
+        exit 1
+      fi
+      if [[ ! -d "$brew_libexec" ]]; then
+        sudo install -d -o "$(id -un)" -g "$(id -gn)" -m 0755 "$brew_libexec"
+      fi
+      if [[ ! -w "$brew_libexec" ]]; then
+        echo "##[error]Homebrew libexec is not writable; refusing to change existing ownership."
+        exit 1
+      fi
       
       # Single brew update for all installations
       brew update
@@ -560,7 +578,7 @@ jobs:
       python3 test/tools/test_linux_php_bootstrap.py
       # Add ondrej/php PPA for PHP 8.5
       sudo add-apt-repository ppa:ondrej/php -y
-      sudo apt-get -o Acquire::Retries=3 update
+      sudo apt-get -o Acquire::Retries=3 -o APT::Update::Error-Mode=any update
       
       # Install PHP 8.5 and required extensions
       sudo apt-get -o Acquire::Retries=3 install -y php$(phpver)-cli php$(phpver)-dev php$(phpver)-xml php$(phpver)-intl
