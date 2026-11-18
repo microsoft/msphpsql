@@ -4,7 +4,7 @@
 
 The [Microsoft Drivers for PHP for Microsoft SQL Server][phpdoc] are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PHP Data Objects (PDO) for accessing data in all editions of SQL Server 2012 and later (including Azure SQL DB). These drivers rely on the [Microsoft ODBC Driver for SQL Server][odbcdoc] to handle the low-level communication with SQL Server.
 
-This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 8.3+ with improvements on both drivers and some limitations. Upcoming [releases][releases] will contain additional functionalities, bug fixes, and more.
+This 5.14.0 release contains the SQLSRV and PDO_SQLSRV drivers for PHP 8.3, 8.4, and 8.5 with improvements on both drivers and some limitations. PHP 8.6 prerelease compatibility is under development and is not production support. Upcoming [releases][releases] will contain additional functionalities, bug fixes, and more.
 
 ## Take our survey
 
@@ -28,6 +28,15 @@ Thank you for taking the time to participate in the [sentiment survey](https://g
 
 Please follow the [Getting started](https://docs.microsoft.com/sql/connect/php/getting-started-with-the-php-sql-driver) page.
 
+Install [PIE (PHP Installer for Extensions)](https://github.com/php/pie/blob/main/docs/usage.md) and the [prerequisites](#prerequisites), then run:
+
+```shell
+pie install microsoft/sqlsrv
+pie install microsoft/pdo_sqlsrv
+```
+
+Starting with 5.14.0, new driver releases are published through PIE instead of PECL. PIE supports Windows, Linux, and macOS; prebuilt binaries remain available on the [releases page][releases].
+
 ## Announcements
 
  Please follow [SQL Server Drivers][sqldrivers] for announcements.
@@ -45,17 +54,17 @@ On the server side, Microsoft SQL Server 2012 and above on Windows are supported
 
 ## Building and Installing the Drivers on Windows
 
-The drivers are distributed as pre-compiled extensions for PHP found on the [releases page][releases]. They are available in thread-safe and non-thread-safe versions, and in 32-bit (Windows only) and 64-bit versions. The source code for the drivers is also available, and you can compile them as thread safe or non-thread-safe versions. The thread safety configuration of your web server will determine which version you need. 
+PIE automatically selects the precompiled extension matching your PHP version, thread safety, and architecture, and attempts to enable it. Alternatively, download precompiled extensions from the [releases page][releases] for manual installation. They are available in thread-safe and non-thread-safe versions, and in 32-bit (Windows only) and 64-bit versions. The source code for the drivers is also available, and you can compile them as thread safe or non-thread-safe versions. The thread safety configuration of your web server will determine which version you need.
  
 If you choose to build the drivers, you must be able to build PHP 8.* without including these extensions. For help building PHP on Windows, see the [official PHP website][phpbuild]. For details on compiling the drivers, see the [documentation](https://github.com/microsoft/msphpsql/blob/master/buildscripts/README.md) -- an example buildscript is provided, but you can also compile the drivers manually.
 
-To load the drivers, make sure that the driver is in your PHP extension directory and enable it in your PHP installation's php.ini file by adding `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll` to the ini file.  If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini. For more details on loading the drivers, see [Loading the PHP SQL Driver](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver) on Microsoft Docs.
+For manual installation, make sure that the driver is in your PHP extension directory and enable it in your PHP installation's php.ini file by adding `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll` to the ini file. If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini. Do not add duplicate entries if PIE has already enabled the drivers. For more details on loading the drivers, see [Loading the PHP SQL Driver](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver) on Microsoft Docs.
 
 Finally, if running PHP in a Web server, restart the Web server.
 
 ## Install (UNIX)
 
-For full instructions on installing the drivers on all supported Unix platforms, see [the installation instructions on Microsoft Docs][unixinstructions].
+For full instructions on installing the drivers with PIE on supported Unix platforms, see the [Linux and macOS installation tutorial](Linux-mac-install.md) or [the installation instructions on Microsoft Docs][unixinstructions].
 
 ## Sample Code
 For PHP code samples, please see the [sample](https://github.com/Microsoft/msphpsql/tree/master/sample) folder or the [code samples on Microsoft Docs](https://docs.microsoft.com/sql/connect/php/code-samples-for-php-sql-driver). For information on how to use the driver, see [Microsoft Drivers for PHP for Microsoft SQL Server][phpdoc].
@@ -74,7 +83,7 @@ Given a version number MAJOR.MINOR.PATCH,
  
 The version number may have trailing pre-release version identifiers to indicate the stability and/or build metadata.
 
-- Pre-release version is denoted by a hyphen followed by `beta` or `RC` followed by a number. Production quality releases do not contain the pre-release version. `beta` has lower precedence than `RC`. Note that the PECL package version numbers do not have the hyphen before the pre-release version, owing to restrictions in PECL. An example of a PECL package version is `5.9.0beta2`.
+- Pre-release version is denoted by a hyphen followed by `beta` or `RC` followed by a number. Production quality releases do not contain the pre-release version. `beta` has lower precedence than `RC`. Historical PECL package versions omit the hyphen before the pre-release version, for example `5.9.0beta2`; new releases use PIE.
 - Build metadata may be denoted by a plus sign followed by a number of digits, such as `5.9.0-beta2+13930`. Build metadata does not affect the precedence order.
 
 ## Future Plans
