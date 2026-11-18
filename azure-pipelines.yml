@@ -44,6 +44,24 @@ jobs:
   - script: |
       set -e
       echo "Installing prerequisites via Homebrew..."
+
+      brew_prefix="$(brew --prefix)"
+      case "$brew_prefix" in
+        /usr/local|/opt/homebrew) ;;
+        *) echo "##[error]Unexpected Homebrew prefix."; exit 1 ;;
+      esac
+      brew_libexec="$brew_prefix/libexec"
+      if [[ -L "$brew_libexec" || ( -e "$brew_libexec" && ! -d "$brew_libexec" ) ]]; then
+        echo "##[error]Homebrew libexec must be a real directory, not a symlink or file."
+        exit 1
+      fi
+      if [[ ! -d "$brew_libexec" ]]; then
+        sudo install -d -o "$(id -un)" -g "$(id -gn)" -m 0755 "$brew_libexec"
+      fi
+      if [[ ! -w "$brew_libexec" ]]; then
+        echo "##[error]Homebrew libexec is not writable; refusing to change existing ownership."
+        exit 1
+      fi
       
       # Single brew update for all installations
       brew update
@@ -112,9 +130,20 @@ jobs:
         brew trust --tap microsoft/mssql-release
       fi
       brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
-      HOMEBREW_ACCEPT_EULA=Y brew install \
+      # Check certificate bootstrap before spending time compiling dependent formulae.
+      if ! brew install --verbose ca-certificates; then
+        echo "##[warning]Certificate installation failed; running its post-install step once with noninteractive diagnostics."
+        HOMEBREW_DISABLE_DEBREW=1 brew postinstall --debug --verbose ca-certificates
+      fi
+      if ! HOMEBREW_ACCEPT_EULA=Y brew install --verbose \
         microsoft/mssql-release/msodbcsql18 \
-        microsoft/mssql-release/mssql-tools18
+        microsoft/mssql-release/mssql-tools18; then
+        echo "##[warning]ODBC installation failed; retrying the reported OpenSSL post-install step once."
+        HOMEBREW_DISABLE_DEBREW=1 brew postinstall --debug --verbose openssl@4
+        HOMEBREW_ACCEPT_EULA=Y brew install --verbose \
+          microsoft/mssql-release/msodbcsql18 \
+          microsoft/mssql-release/mssql-tools18
+      fi
       
       # Verify installation
       if driver_files=$(brew list --verbose msodbcsql18) && [[ -n "$driver_files" ]]; then
@@ -544,19 +573,42 @@ jobs:
       architecture: 'x64'
 
   - script: |
+      set -euo pipefail
       echo "Installing PHP $(phpver) and dependencies..."
+      python3 test/tools/test_linux_php_bootstrap.py
       # Add ondrej/php PPA for PHP 8.5
       sudo add-apt-repository ppa:ondrej/php -y
-      sudo apt-get update
+      sudo apt-get -o Acquire::Retries=3 -o APT::Update::Error-Mode=any update
       
       # Install PHP 8.5 and required extensions
-      sudo apt-get install -y php$(phpver)-cli php$(phpver)-dev php$(phpver)-xml php$(phpver)-intl
+      sudo apt-get -o Acquire::Retries=3 install -y php$(phpver)-cli php$(phpver)-dev php$(phpver)-xml php$(phpver)-intl
       
       # Set PHP 8.5 as default
       sudo update-alternatives --set php /usr/bin/php$(phpver)
       sudo update-alternatives --set phpize /usr/bin/phpize$(phpver)
       sudo update-alternatives --set php-config /usr/bin/php-config$(phpver)
       
+      for tool in php phpize php-config; do
+        if [[ "$(readlink -f "$(command -v "$tool")")" != "$(readlink -f "/usr/bin/${tool}$(phpver)")" ]]; then
+          echo "##[error]$tool does not resolve to the requested PHP $(phpver) toolchain."
+          exit 1
+        fi
+      done
+      if [[ "$(php -r 'echo PHP_MAJOR_VERSION, ".", PHP_MINOR_VERSION;')" != "$(phpver)" ]]; then
+        echo "##[error]The active PHP runtime does not match $(phpver)."
+        exit 1
+      fi
+      if [[ "$(php -r 'echo PHP_VERSION;')" != "$(php-config --version)" ]]; then
+        echo "##[error]PHP and php-config report different versions."
+        exit 1
+      fi
+      php_api=$(php-config --phpapi)
+      phpize_api=$(phpize --version | awk '/PHP Api Version/ { print $NF }')
+      if [[ ! "$php_api" =~ ^[0-9]+$ || "$phpize_api" != "$php_api" ]]; then
+        echo "##[error]phpize and php-config report different or missing PHP API versions."
+        exit 1
+      fi
+
       # Ensure conf.d directory exists for PHP 8.5
       sudo mkdir -p /etc/php/$(phpver)/cli/conf.d
       
@@ -845,8 +897,12 @@ jobs:
       
       Write-Host "Installing PHP $(phpVersion) version $version"
       
-      # Compare the PHP version without a Windows packaging revision (e.g. 8.5.12-1).
-      $vsVersion = if ([version]($version -split '-', 2)[0] -ge [version]"8.5.0") { "vs17" } else { "vs16" }
+      # Select by supported minor, allowing prerelease and Windows packaging suffixes.
+      $vsVersion = switch -Regex ($version) {
+        '^8\.[45]\.' { "vs17"; break }
+        '^8\.6\.' { "vs18"; break }
+        default { throw "Unsupported PHP version: $version. Use PHP 8.4, 8.5 or 8.6." }
+      }
       
       # Download PHP NTS x64
       $phpUrl = "https://windows.php.net/downloads/releases/php-$version-nts-Win32-$vsVersion-x64.zip"
