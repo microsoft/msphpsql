@@ -47,6 +47,10 @@
 #endif
 
 #include "php.h"
+#if PHP_VERSION_ID < 80400 || PHP_VERSION_ID >= 80700
+#error "The SQLSRV and PDO_SQLSRV drivers require PHP 8.4, 8.5 or 8.6."
+#endif
+
 #include "php_globals.h"
 #include "php_ini.h"
 #include "ext/standard/php_standard.h"

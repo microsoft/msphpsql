@@ -129,14 +129,8 @@ function fetchBinaryAsBinary($conn, $tableName, $inputs)
         $stmt->bindColumn('c1', $binaryValue, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
         $row = $stmt->fetch(PDO::FETCH_BOUND);
     
-        if (PHP_VERSION_ID < 80100) {
-            if ($binaryValue !== $inputs[0]) {
-                echo "Fetched binary value unexpected: $binaryValue\n";
-            }
-        } else {
-            if (!compareResourceToInput($binaryValue, $inputs[0])) {
-                echo "Fetched binary value unexpected\n";
-            }
+        if (!compareResourceToInput($binaryValue, $inputs[0])) {
+            echo "Fetched binary value unexpected\n";
         }
     } catch (PdoException $e) {
         echo "Caught exception in fetchBinaryAsBinary:\n";

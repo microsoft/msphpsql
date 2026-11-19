@@ -52,16 +52,10 @@ try {
 
 function verifyBinaryResult($result, $input, $len, $message)
 {
-    if (PHP_VERSION_ID < 80100) {
-        if (strncmp($result, $input, $len) !== 0) {
+    if (!feof($result)) {
+        $str = fread($result, $len);
+        if (strncmp($str, $input, $len) !== 0) {
             print_r($message);
-        }
-    } else {
-        if (!feof($result)) {
-            $str = fread($result, $len);
-            if (strncmp($str, $input, $len) !== 0) {
-                print_r($message);
-            }
         }
     }
 }

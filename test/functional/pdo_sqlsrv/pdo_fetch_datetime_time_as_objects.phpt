@@ -131,16 +131,8 @@ function runTest($conn, $query, $columns, $values, $useBuffer = false)
     $row = $stmt->fetch(PDO::FETCH_BOTH);
     checkDTObjectValues($row, $columns, $values, PDO::FETCH_BOTH);
    
-    // ATTR_STRINGIFY_FETCHES should have no effect when fetching date time objects 
-    // Setting it to true only converts numeric values to strings when fetching
-    // See http://www.php.net/manual/en/pdo.setattribute.php for details
-    // stringify on, fetch_numeric off, fetch_datetime on
-    if (PHP_VERSION_ID < 80100) {
-        // TODO: starting in PHP 8.1 with ATTR_STRINGIFY_FETCHES set to true
-        // this fails with this error from PHP:
-        // Fatal error: Uncaught Error: Object of class DateTime could not be converted to string
-        $conn->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, true);
-    }
+    // Keep stringify off: PDO cannot convert DateTime objects to strings.
+    // fetch_numeric off, fetch_datetime on
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, false);
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, true);
     $stmt = $conn->prepare($query, $options);

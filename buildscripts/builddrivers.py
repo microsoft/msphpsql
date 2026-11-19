@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 #########################################################################################
 #
-# Description:  This script helps to build drivers in a Windows environment for PHP 7+ (32-bit/64-bit)
+# Description:  Build drivers on Windows for PHP 8.4, 8.5 and 8.6 (32-bit/64-bit)
 #
 # Requirement:
 #               python 3.x
 #               PHP SDK and PHP Source 
 #               Driver source code folder / GitHub repository
-#               Visual Studio 2015 (PHP 7.0* and 7.1*) and Visual Studio 2017 (PHP 7.2*)
+#               Visual Studio 2022 (PHP 8.4/8.5) or Visual Studio 2026 (PHP 8.6)
 #
 # Execution: Run with command line with required options.
 # Examples: 
 #           py builddrivers.py (for interactive mode)
-#           py builddrivers.py --PHPVER=7.0.22 --ARCH=x64 --THREAD=nts --DRIVER=all --DEBUG
+#           py builddrivers.py --PHPVER=8.6.0RC7 --ARCH=x64 --THREAD=nts --DRIVER=all --DEBUG
 #
 # Output: Build the drivers using PHP SDK. When running for local development, if build is unsuccessful, 
 #         the log file will be launched for examination. Otherwise, the drivers will be renamed 
@@ -388,7 +388,7 @@ def validate_input(question, values):
 ################################### Main Function ###################################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--PHPVER', help="PHP version, e.g. 7.4.* etc.")
+    parser.add_argument('--PHPVER', help="PHP 8.4, 8.5 or 8.6 version, e.g. 8.4.27 or 8.6.0RC7")
     parser.add_argument('--ARCH', choices=['x64', 'x86'])
     parser.add_argument('--THREAD', choices=['nts', 'ts'], type=str.lower)
     parser.add_argument('--DRIVER', default='all', choices=['all', 'sqlsrv', 'pdo_sqlsrv'], help="driver to build (default: all)")
@@ -419,13 +419,13 @@ if __name__ == '__main__':
         # will not prompt for drivers' destination path, which is None by default
         while True:
             # perform some minimal checks
-            phpver = input("PHP Version (e.g. 7.1.* or 7.2.*): ")
+            phpver = input("PHP Version (8.4, 8.5 or 8.6, e.g. 8.6.0RC7): ")
             if not phpver:
                 print('Empty PHP version entered! Please try again.')
                 continue
                 
             if not validate_php_version(phpver):
-                print(f'Invalid PHP version format: {phpver}. Must be 7.0 or above (e.g., 7.0.22, 7.4, 8.0.3).')
+                print(f'Unsupported or invalid PHP version: {phpver}. Use PHP 8.4, 8.5 or 8.6 (e.g., 8.4.27, 8.5.12, 8.6.0RC7).')
                 continue
                 
             break
@@ -453,7 +453,7 @@ if __name__ == '__main__':
     else:
         # Validate command line PHP version
         if not validate_php_version(phpver):
-            print(f'Error: Invalid PHP version format: {phpver}. Must be 7.0 or above (e.g., 7.0.22, 7.4, 8.0.3).')
+            print(f'Error: Unsupported or invalid PHP version: {phpver}. Use PHP 8.4, 8.5 or 8.6 (e.g., 8.4.27, 8.5.12, 8.6.0RC7).')
             sys.exit(1)
 
     try:

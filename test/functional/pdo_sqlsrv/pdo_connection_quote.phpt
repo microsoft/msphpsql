@@ -19,23 +19,13 @@ try {
     $output3 = $conn->quote("<XmlTestData><Letters>The quick brown fox jumps over the lazy dog</Letters><Digits>0123456789</Digits></XmlTestData>");
     var_dump($output3);
 
-    if (PHP_MAJOR_VERSION < 8) {
+    try {
         $stmt = $conn->query("");
-        if ($stmt != false) {
-            echo("Empty query was expected to fail!\n");
-        }
-        unset($stmt);
-    } else {
-        try {
-            $stmt = $conn->query("");
-            echo("Empty query was expected to fail!\n");
-        } catch (ValueError $ve) {
-            // PHP 8.3 says "cannot be empty", PHP 8.4 says "must not be empty"
-            // We use * wildcards to match both.
-            $error = '*PDO::query(): Argument #1 ($query) * be empty';
-            if (!fnmatch($error, $ve->getMessage())) {
-                var_dump($ve->getMessage());
-            }
+        echo("Empty query was expected to fail!\n");
+    } catch (ValueError $ve) {
+        $error = 'PDO::query(): Argument #1 ($query) must not be empty';
+        if (!fnmatch($error, $ve->getMessage())) {
+            var_dump($ve->getMessage());
         }
     }
 
