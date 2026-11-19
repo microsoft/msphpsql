@@ -226,10 +226,10 @@ jobs:
           -p 1433:1433 --name sqlserver \
           -d mcr.microsoft.com/mssql/server:2022-latest
 
-        # Probe the same host endpoint used by PHPTs, with bounded login/query attempts.
+        # CI-only loopback probe targets the local container used by PHPTs, with bounded attempts.
         for ((attempt=1; attempt<=60; attempt++)); do
-          if sqlcmd -S 127.0.0.1 -U "$(sqlUser)" -No -C -b -l 5 -t 5 \
-            -Q "SET NOCOUNT ON; SELECT 1"; then
+          if sqlcmd -U "$(sqlUser)" -No -C -b -l 5 -t 5 \
+            -S 127.0.0.1 -Q "SET NOCOUNT ON; SELECT 1"; then # DevSkim: ignore DS162092
             echo "SQL Server connection verified!"
             exit 0
           fi
