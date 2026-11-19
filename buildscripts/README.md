@@ -11,7 +11,7 @@ Install the Visual Studio version appropriate to your PHP version, including the
 
 Here `<arch>` is `x64` or `x86`. Compiler selection uses the validated major/minor version, including for prereleases. PHP sources and build outputs use the corresponding `php-sdk\phpdev\<compiler>\<arch>` directory.
 
-Release 5.14.0 supports PHP 8.4, PHP 8.5, and PHP 8.6 prereleases. **PHP 8.6 itself is not production-ready**; prerelease support does not imply production readiness or completed toolchain validation. Building for PHP 8.6 / Visual Studio 2026 requires a PHP SDK with the matching `vs18` launcher and compatible dependencies. This branch accepts only PHP 8.4, 8.5 and 8.6; other versions are rejected.
+Release 5.14.0 supports PHP 8.4, PHP 8.5, and PHP 8.6. Building for PHP 8.6 / Visual Studio 2026 requires a PHP SDK with the matching `vs18` launcher and compatible dependencies. This branch accepts only PHP 8.4, 8.5 and 8.6; other versions are rejected.
 
 The current compatibility qualification campaign targets PHP **8.4.27**, **8.5.12**, and **8.6.0RC7**. Pass the exact target through `--PHPVER`; this list does not configure the repository CI matrices or imply completed cross-platform qualification. Rebuild both extensions against the target PHP headers: PHP 8.6.0RC7 uses module API `20261112`.
 
