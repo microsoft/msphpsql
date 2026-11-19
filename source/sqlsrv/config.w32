@@ -39,16 +39,8 @@ if( PHP_SQLSRV != "no" ) {
             ADD_FLAG( "CFLAGS_SQLSRV", "/Zi" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/ZH:SHA_256 /sdl /W4 /WX" );
             ADD_FLAG( "LDFLAGS_SQLSRV", "/CETCOMPAT" );
-            if (VCVERS >= 1913) {
-                ADD_FLAG("LDFLAGS_SQLSRV", "/d2:-guardspecload");
-                ADD_FLAG("CFLAGS_SQLSRV", "/Qspectre");
-            } else if (VCVERS == 1900) {
-                var subver1900 = probe_binary(PHP_CL).substr(6);
-                if (subver1900 >= 24241) {
-                    ADD_FLAG("LDFLAGS_SQLSRV", "/d2:-guardspecload");
-                    ADD_FLAG('CFLAGS_SQLSRV', "/Qspectre");
-                }
-            }
+            ADD_FLAG("LDFLAGS_SQLSRV", "/d2:-guardspecload");
+            ADD_FLAG("CFLAGS_SQLSRV", "/Qspectre");
             if (PHP_DEBUG != "yes") ADD_FLAG( "CFLAGS_SQLSRV", "/guard:cf /O2" );
             // Do NOT pass /DZEND_ENABLE_STATIC_TSRMLS_CACHE=1 here. On ZTS (thread-safe) shared
             // builds it makes init.cpp define _tsrm_ls_cache with C linkage while the shared

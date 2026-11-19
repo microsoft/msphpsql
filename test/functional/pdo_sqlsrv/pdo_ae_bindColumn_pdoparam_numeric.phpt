@@ -53,7 +53,7 @@ try {
                     if (!is_null($det) || !is_null($rand)) {
                         echo "Retrieving $dataType data as $pdoParamType should not be supported\n";
                     }
-                } elseif (PHP_VERSION_ID >= 80100 && $pdoParamType == "PDO::PARAM_BOOL") {
+                } elseif ($pdoParamType == "PDO::PARAM_BOOL") {
                     if ($det == boolval($inputValues[0]) && $rand == boolval($inputValues[1])) {
                         echo "****Retrieving $dataType as $pdoParamType is supported****\n";
                     } else {
@@ -78,10 +78,8 @@ try {
             // with or without AE: should work
             } else {
                 if ($pdoParamType == "PDO::PARAM_LOB") {
-                    if (PHP_VERSION_ID >= 80100) {
-                        $det = fread($det, 8192);
-                        $rand = fread($rand, 8192);
-                    }
+                    $det = fread($det, 8192);
+                    $rand = fread($rand, 8192);
                 }
                 if ($dataType == "real") {
                     if (abs($det - $inputValues[0]) < $epsilon && abs($rand - $inputValues[1]) < $epsilon) {

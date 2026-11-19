@@ -13,21 +13,13 @@ try {
     $dsn = getDSN($server, $databaseName, $driver);
     
     // With PHP 8.0 the default is PDO::ERRMODE_EXCEPTION rather than PDO::ERRMODE_SILENT
-    if (PHP_MAJOR_VERSION == 8) {
-        $attr = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT, PDO::ATTR_PREFETCH => true);
-    } else {
-        $attr = array(PDO::ATTR_PREFETCH => true, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
-    }
+    $attr = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT, PDO::ATTR_PREFETCH => true);
     $conn = new PDO($dsn, $uid, $pwd, $attr); 
     echo "Error from unsupported attribute (ATTR_PREFETCH) is silenced\n\n";
     unset($conn);
    
     echo "Testing a connection with ATTR_PREFETCH after ERRMODE_EXCEPTION...\n";
-    if (PHP_MAJOR_VERSION == 8) {
-        $attr = array(PDO::ATTR_PREFETCH => true);
-    } else {
-        $attr = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_PREFETCH => true); 
-    }
+    $attr = array(PDO::ATTR_PREFETCH => true);
     $conn = new PDO($dsn, $uid, $pwd, $attr); 
     //free the connection 
     unset($conn);

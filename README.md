@@ -4,7 +4,7 @@
 
 The [Microsoft Drivers for PHP for Microsoft SQL Server][phpdoc] are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PHP Data Objects (PDO) for accessing data in all editions of SQL Server 2012 and later (including Azure SQL DB). These drivers rely on the [Microsoft ODBC Driver for SQL Server][odbcdoc] to handle the low-level communication with SQL Server.
 
-This 5.14.0 release contains the SQLSRV and PDO_SQLSRV drivers for PHP 8.3, 8.4, and 8.5 with improvements on both drivers and some limitations. PHP 8.6 prerelease compatibility is under development and is not production support. Upcoming [releases][releases] will contain additional functionalities, bug fixes, and more.
+This 5.14.0 release contains the SQLSRV and PDO_SQLSRV drivers for PHP 8.4 and 8.5 with improvements on both drivers and some limitations. PHP 8.3 and earlier are no longer supported. PHP 8.6 prerelease compatibility is under development and is not production support. Upcoming [releases][releases] will contain additional functionalities, bug fixes, and more.
 
 ## Take our survey
 
@@ -23,6 +23,12 @@ Thank you for taking the time to participate in the [sentiment survey](https://g
 [az-image]: https://sqlclientdrivers.visualstudio.com/public/_apis/build/status%2FPHP%2Fmicrosoft.msphpsql?branchName=refs%2Fpull%2F1492%2Fmerge
 [Coverage Codecov]: https://codecov.io/gh/microsoft/msphpsql/branch/dev/graph/badge.svg
 [codecov-site]: https://codecov.io/gh/microsoft/msphpsql
+
+### macOS CI setup
+
+The macOS job in `azure-pipelines.yml` reuses installed Homebrew formulae without automatic updates or upgrades, installs missing tools serially, and uses the Docker CLI with Colima rather than Docker Desktop. Its minimal PHP build does not enable `intl`, so it does not install ICU. PHP's build system still checks the required Bison and re2c versions.
+
+After ODBC installation, Colima and SQL Server startup run alongside PHP compilation. The job waits for both, uses bounded SQL connection probes instead of fixed startup sleeps, and prints setup diagnostics even when compilation fails. Both functional suites still run in full. `test/tools/test_macos_ci_setup.py` exercises this coordination and failure handling with mocked tools; actual macOS CI is required to measure runtime savings.
 
 ## Get Started
 
@@ -46,7 +52,7 @@ Starting with 5.14.0, new driver releases are published through PIE instead of P
 For full details on the system requirements for the drivers, see the [system requirements](https://docs.microsoft.com/sql/connect/php/system-requirements-for-the-php-sql-driver) on Microsoft Docs.
 
 On the client machine:
-- 8.3.x, 8.4.x, 8.5.x
+- PHP 8.4.x, 8.5.x, or 8.6 prereleases for development qualification
 - [Microsoft ODBC Driver 18 or 17][odbcdoc]
 - If using a Web server such as Internet Information Services (IIS) or Apache, it must be configured to run PHP
 
@@ -56,7 +62,7 @@ On the server side, Microsoft SQL Server 2012 and above on Windows are supported
 
 PIE automatically selects the precompiled extension matching your PHP version, thread safety, and architecture, and attempts to enable it. Alternatively, download precompiled extensions from the [releases page][releases] for manual installation. They are available in thread-safe and non-thread-safe versions, and in 32-bit (Windows only) and 64-bit versions. The source code for the drivers is also available, and you can compile them as thread safe or non-thread-safe versions. The thread safety configuration of your web server will determine which version you need.
  
-If you choose to build the drivers, you must be able to build PHP 8.* without including these extensions. For help building PHP on Windows, see the [official PHP website][phpbuild]. For details on compiling the drivers, see the [documentation](https://github.com/microsoft/msphpsql/blob/master/buildscripts/README.md) -- an example buildscript is provided, but you can also compile the drivers manually.
+If you choose to build the drivers, you must be able to build PHP 8.4, 8.5 or 8.6 without including these extensions. For help building PHP on Windows, see the [official PHP website][phpbuild]. For details on compiling the drivers, see the [documentation](https://github.com/microsoft/msphpsql/blob/master/buildscripts/README.md) -- an example buildscript is provided, but you can also compile the drivers manually.
 
 For manual installation, make sure that the driver is in your PHP extension directory and enable it in your PHP installation's php.ini file by adding `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll` to the ini file. If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini. Do not add duplicate entries if PIE has already enabled the drivers. For more details on loading the drivers, see [Loading the PHP SQL Driver](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver) on Microsoft Docs.
 

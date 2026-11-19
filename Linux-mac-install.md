@@ -1,7 +1,7 @@
 # Linux and macOS Installation Tutorial for the Microsoft Drivers for PHP for SQL Server
 The following instructions assume a clean environment and show how to install PHP 8.4, the Microsoft ODBC driver, the Apache web server, and the Microsoft Drivers for PHP for SQL Server on Ubuntu, RedHat, Debian, Suse, Alpine, and macOS. These instructions install the drivers using [PIE (PHP Installer for Extensions)](https://github.com/php/pie). Starting with 5.14.0, new releases will no longer be published to PECL. You can also download the prebuilt binaries from the [Microsoft Drivers for PHP for SQL Server](https://github.com/Microsoft/msphpsql/releases) GitHub project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver). For an explanation of extension loading, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver#loading-the-driver-at-php-startup).
 
-The following instructions install PHP 8.4 by default, if the PHP 8.4 packages are available. Note that some supported Linux distros may default to older PHP versions -- please see the notes at the beginning of each section to install PHP 8.3 or 8.5 instead. PHP 8.6 prerelease compatibility is under development and is not production support.
+The following instructions install PHP 8.4 by default, if the PHP 8.4 packages are available. Some Linux distros default to older PHP versions; select PHP 8.4 or follow the notes to install PHP 8.5 instead. PHP 8.3 and earlier are no longer supported. PHP 8.6 prerelease compatibility is under development and is not production support; qualification requires matching source builds rather than an assumption that release packages are available.
 
 After installing PHP in Step 1 for your platform, [install PIE](https://github.com/php/pie/blob/main/docs/usage.md#installing-pie) and make the `pie` command available on your PATH (including when using `sudo`). Follow PIE's platform prerequisites, including PHP development tools, a C/C++ build toolchain, and the PHP ZIP extension or Git for downloading source. Install the ODBC prerequisites in Step 2 before installing the drivers. If multiple PHP versions are installed, use PIE's `--with-php-config` and, when needed, `--with-phpize-path` options to select the matching development tools.
 
@@ -24,7 +24,7 @@ While these instructions contain commands to install both SQLSRV and PDO_SQLSRV 
 ## Installing the drivers on Ubuntu
 
 > [!NOTE]
-> To install PHP 8.3 or 8.5, replace 8.4 with 8.3 or 8.5 in the following commands.
+> To install PHP 8.5, replace 8.4 with 8.5 in the following commands.
 
 ### Step 1. Install PHP
 ```bash
@@ -67,7 +67,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 ## Installing the drivers with PHP-FPM on Ubuntu
 
 > [!NOTE]
-> To install PHP 8.3 or 8.5, replace 8.4 with 8.3 or 8.5 in the following commands.
+> To install PHP 8.5, replace 8.4 with 8.5 in the following commands.
 
 ### Step 1. Install PHP
 ```bash
@@ -136,7 +136,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 
 To install PHP on Red Hat 8, run the following:
 > [!NOTE]
-> To install PHP 8.3 or 8.5, replace remi-8.4 with remi-8.3 or remi-8.5 respectively in the following commands.
+> To install PHP 8.5, replace remi-8.4 with remi-8.5 in the following commands.
 ```bash
 sudo su
 dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
@@ -152,7 +152,7 @@ dnf install php-pdo php-devel
 
 To install PHP on Red Hat 9, run the following:
 > [!NOTE]
-> To install PHP 8.3 or 8.5, replace remi-8.4 with remi-8.3 or remi-8.5 respectively in the following commands.
+> To install PHP 8.5, replace remi-8.4 with remi-8.5 in the following commands.
 ```bash
 sudo su
 dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
@@ -199,7 +199,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 ## Installing the drivers on Debian
 
 > [!NOTE]
-> To install PHP 8.3 or 8.5, replace 8.4 in the following commands with 8.3 or 8.5.
+> To install PHP 8.5, replace 8.4 in the following commands with 8.5.
 
 ### Step 1. Install PHP
 ```bash
@@ -254,7 +254,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 > In the following instructions, replace `<SuseVersion>` with your version of Suse - if you are using Suse Enterprise Linux 15, it will be SLE_15_SP3 or SLE_15_SP4 (or above). For Suse 12, use SLE_12_SP5 (or above). Not all versions of PHP are available for all versions of Suse Linux - please refer to `http://download.opensuse.org/repositories/devel:/languages:/php` to see which versions of Suse have the default version PHP available, or check `http://download.opensuse.org/repositories/devel:/languages:/php:/` to see which other versions of PHP are available for which versions of Suse.
 
 > [!NOTE]
-> Packages for PHP 8.3 or above may not be available for all versions of Suse. Please check the repositories for the latest available PHP versions.
+> Packages for PHP 8.4 or 8.5 may not be available for all versions of Suse. Please check the repositories for an available supported PHP version.
 
 ### Step 1. Install PHP
 ```bash
@@ -346,7 +346,7 @@ If you do not already have it, install Homebrew as follows:
 > If using Apple Silicon (M1/M2/M3) hardware, please install Homebrew and PHP directly without using the emulator Rosetta 2.
 
 > [!NOTE]
-> To install PHP 8.3 or 8.5, replace php@8.4 with php@8.3 or php@8.5 respectively in the following commands.
+> To install PHP 8.5, replace php@8.4 with php@8.5 in the following commands.
 
 ### Step 1. Install PHP
 

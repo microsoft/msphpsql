@@ -102,8 +102,9 @@ The `config.m4` includes logic to avoid double-compiling shared sources when bot
 
 Each extension has a `config.w32` (JScript) for the PHP Windows SDK build:
 
-- **Visual Studio**: VS2019 for PHP 8.3, VS2022 for PHP 8.4+
-- **Security flags**: `/NXCOMPAT`, `/DYNAMICBASE`, `/guard:cf`, `/ZH:SHA_256`, `/W4`, `/WX`, `/CETCOMPAT`, `/Qspectre` (for VCVERS >= 1913)
+- **PHP targets**: PHP 8.4, 8.5 and 8.6 only; PHP 8.6 prerelease qualification is not a production-support claim
+- **Visual Studio**: VS2022 for PHP 8.4/8.5, VS2026 for PHP 8.6
+- **Security flags**: `/NXCOMPAT`, `/DYNAMICBASE`, `/guard:cf`, `/ZH:SHA_256`, `/W4`, `/WX`, `/CETCOMPAT`, `/Qspectre`
 - **Scripted builds**: `buildscripts/builddrivers.py` automates downloading PHP SDK, source, and building both extensions
 
 ### PECL Packaging

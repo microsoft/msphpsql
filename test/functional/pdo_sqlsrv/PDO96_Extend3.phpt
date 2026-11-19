@@ -9,9 +9,6 @@ PHPT_EXEC=true
 if (!extension_loaded("pdo_sqlsrv")) {
     die("skip Extension not loaded");
 }
-if (PHP_VERSION_ID < 80000) {
-    die("skip Test designed for PHP 8.*");
-}
 ?>
 --FILE--
 <?php

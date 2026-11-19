@@ -62,11 +62,7 @@ function fetchBoth($conn, $tbname)
         $meta = $stmt->getColumnMeta(-1);
         echo "Expect getColumnMeta to fail with -1\n";
     } catch (Error $e) {
-        if (PHP_MAJOR_VERSION == 8) {
-            $error = '*PDOStatement::getColumnMeta(): Argument #1 ($column) must be greater than or equal to 0*';
-        } else {
-            $error = '*Invalid column reference: column number must be non-negative*';
-        }
+        $error = '*PDOStatement::getColumnMeta(): Argument #1 ($column) must be greater than or equal to 0*';
         if (!fnmatch($error, $e->getMessage())) {
             echo "Unexpected error:";
             var_dump($e->getMessage());

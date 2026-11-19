@@ -30,9 +30,7 @@ try {
     $stmt->execute();
     $stmt->bindColumn('exist', $float_col, PDO::PARAM_LOB);
     $value = $stmt->fetch();
-    if (PHP_VERSION_ID >= 80100) {
-        $float_col = fread($float_col, 8192);
-    }
+    $float_col = fread($float_col, 8192);
     var_dump($float_col);
 
     print "\nno buffered cursor, stringify off, fetch_numeric on\n";
@@ -41,9 +39,7 @@ try {
     $stmt->execute();
     $stmt->bindColumn('exist', $float_col, PDO::PARAM_LOB);
     $value = $stmt->fetch();
-    if (PHP_VERSION_ID >= 80100) {
-        $float_col = fread($float_col, 8192);
-    }
+    $float_col = fread($float_col, 8192);
     var_dump($float_col);
 
     print "\nno buffered cursor, stringify on, fetch_numeric on\n";
@@ -69,9 +65,7 @@ try {
     $stmt->execute();
     $stmt->bindColumn('exist', $float_col, PDO::PARAM_LOB);
     $value = $stmt->fetch();
-    if (PHP_VERSION_ID >= 80100) {
-        $float_col = fread($float_col, 8192);
-    }
+    $float_col = fread($float_col, 8192);
     var_dump($float_col);
 
     print "\nbuffered cursor, stringify off, fetch_numeric on\n";
@@ -80,9 +74,7 @@ try {
     $stmt->execute();
     $stmt->bindColumn('exist', $float_col, PDO::PARAM_LOB);
     $value = $stmt->fetch();
-    if (PHP_VERSION_ID >= 80100) {
-        $float_col = fread($float_col, 8192);
-    }
+    $float_col = fread($float_col, 8192);
     var_dump($float_col);
 
     print "\nbuffered cursor, stringify on, fetch_numeric on\n";
