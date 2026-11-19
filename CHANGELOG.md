@@ -8,9 +8,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 ## 5.14.0 - 2026-11-20
 
 ### Removed
-- Support for PHP 8.3 and earlier, including compatibility paths, build targets and test branches. The drivers require PHP 8.4 or 8.5 for production use; PHP 8.6 remains under prerelease qualification and is not a production-support announcement. Native builds reject PHP versions outside 8.4, 8.5 and 8.6.
+- Support for PHP 8.3 and earlier, including compatibility paths, build targets and test branches. Native builds reject PHP versions outside 8.4, 8.5 and 8.6.
 
 ### Added
+- Support for PHP 8.6 prereleases alongside PHP 8.4 and 8.5. PHP 8.6 itself is not production-ready; prerelease support does not imply production readiness or completed cross-platform qualification.
 - PDO native input string declarations through `SQLSRV_ATTR_PARAM_METADATA` (also usable with `bindValue` and `execute` arrays), or `bindParam` driver-option arrays. Explicit `VARCHAR`/`NVARCHAR` types and lengths are independent of source encoding; bounded VARCHAR currently rejects non-ASCII input pending collation-aware validation. Unicode NVARCHAR and VARCHAR(MAX) remain supported. Opt-in connection attribute `SQLSRV_ATTR_DEFAULT_STR_LENGTH` provides a per-statement sizing floor that grows to fit longer values, retains a high-water mark, and promotes to MAX. Legacy defaults and output parameter lengths are unchanged.
 - Opt-in `PDO::SQLSRV_ENCODING_UTF8_VARCHAR` and SQLSRV `CharacterSet => SQLSRV_ENC_UTF8_VARCHAR` (`utf-8-varchar`) interpret PHP strings as UTF-8 while inferring `VARCHAR` parameters. Strings, output parameters and reads use Unicode ODBC transport. Narrow SQL stream inputs validate UTF-8 and send binary C buffers to avoid client-locale conversion and ODBC wide-to-narrow streaming corruption. Existing UTF-8 encoding and PDO extended string flags are unchanged. Explicit SQL types and Always Encrypted parameter metadata still take precedence. Lossless non-ASCII `VARCHAR` input requires a UTF-8 parameter/database collation as well as a compatible destination column; a column's `_UTF8` collation alone is not sufficient. PDO emulated prepares use ordinary character literals unless overridden by the existing national-string options, and therefore also depend on the database collation.
 - Connection option aliases `ConnectTimeout` for `LoginTimeout`, `FailoverPartner` for `Failover_Partner`, and `WorkstationID` for `WSID` in both drivers. Existing ODBC keywords and attributes are retained for compatibility with older supported ODBC drivers. Names are case-insensitive, and the last occurrence of an option or its alias wins.
@@ -22,7 +23,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
 ### Fixed
 - PDO connection-resiliency tests check the physical transport so MARS logical sessions are not mistaken for non-TCP connections.
-- Initial PHP 8.6 development compatibility: adapt stream opener error reporting to the new PHP API and replace removed INI macros while preserving numeric parsing and earlier PHP behavior. Qualification against PHP 8.6 prereleases is ongoing; this is not a production support announcement.
+- PHP 8.6 prerelease compatibility: adapt stream opener error reporting to the new PHP API and replace removed INI macros while preserving numeric parsing and earlier PHP behavior. PHP 8.6 itself is not production-ready; these compatibility changes do not imply completed cross-platform qualification.
 - Windows build scripts recognize official PHP prerelease version tags and select Visual Studio 2026 for PHP 8.6 and Visual Studio 2022 for PHP 8.4/8.5.
 - Correct Azure Key Vault credential buffer sizing during Always Encrypted connection configuration in both drivers, preserving complete principal IDs and secrets.
 - Honor per-parameter UTF-8 VARCHAR encoding overrides for TVP columns, falling back to the statement/connection encoding when unspecified (including `SQLSRV_PHPTYPE_TABLE`), while retaining numeric and binary column encodings derived from SQL metadata.
