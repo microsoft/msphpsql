@@ -28,7 +28,7 @@ Thank you for taking the time to participate in the [sentiment survey](https://g
 
 Please follow the [Getting started](https://docs.microsoft.com/sql/connect/php/getting-started-with-the-php-sql-driver) page.
 
-Install [PIE (PHP Installer for Extensions)](https://github.com/php/pie/blob/main/docs/usage.md) and the [prerequisites](#prerequisites), then run:
+Install [PIE (PHP Installer for Extensions)](https://github.com/php/pie/blob/1.6.x/docs/usage.md) and the [prerequisites](#prerequisites), then run:
 
 ```shell
 pie install microsoft/sqlsrv
