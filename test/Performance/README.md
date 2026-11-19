@@ -74,8 +74,12 @@ require a disposable Windows benchmark machine; unit checks do not establish
 that an existing host's installation is safe.
 
 ### Linux and macOS
-Use the [installation guide](../../Linux-mac-install.md) to provision PHP 8.4 or 8.5 and matching drivers, or build PHP 8.6 and both drivers for prerelease qualification. Install the Composer dependencies from this directory. The old PHP 7-only Unix provisioning script has been removed; historical benchmark results and platform labels are not current support claims.
+Use the [installation guide](../../Linux-mac-install.md) to provision PHP 8.4 or 8.5 and matching drivers, or build PHP 8.6 and both drivers for prerelease qualification. Install Python 3 and the `pyodbc` package in the Python environment used to execute `run-perf_tests.py`, as well as the Composer dependencies from this directory.
 
+The `connect()` function in `run-perf_tests.py` currently requests `ODBC Driver 13 for SQL Server`. If the installation guide installs a newer ODBC driver, update that function's `driver` argument to the exact installed driver name and configure the connection for that driver's encryption and certificate requirements before running benchmarks.
+
+The old PHP 7-only Unix provisioning script has been removed; historical benchmark results and platform labels are not current support claims.
+
 ## Run benchmarks
 PHPBench is used to run the benchmarks. Visit http://phpbench.readthedocs.io/en/latest/introduction.html to have an idea how the tool works.
 
