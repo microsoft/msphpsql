@@ -15,37 +15,17 @@ environment:
     APPVEYOR: true
     # For details about Appveyor build worker images (VM template): https://www.appveyor.com/docs/build-environment/#build-worker-images
     matrix:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
         BUILD_PLATFORM: x86
         TEST_PHP_SQL_SERVER: (local)\SQL2019
         SQL_INSTANCE: SQL2019
-        PHP_VC: vs16
+        PHP_VC: vs17
         PHP_MAJOR_VER: 8.4
         PHP_MINOR_VER: latest
         PHP_EXE_PATH: Release
         THREAD: nts
         platform: x86
-      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-        BUILD_PLATFORM: x86
-        TEST_PHP_SQL_SERVER: (local)\SQL2019
-        SQL_INSTANCE: SQL2019
-        PHP_VC: vs16
-        PHP_MAJOR_VER: 8.2
-        PHP_MINOR_VER: latest
-        PHP_EXE_PATH: Release
-        THREAD: nts
-        platform: x86
-      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-        BUILD_PLATFORM: x86
-        TEST_PHP_SQL_SERVER: (local)\SQL2019
-        SQL_INSTANCE: SQL2019
-        PHP_VC: vs16
-        PHP_MAJOR_VER: 8.1
-        PHP_MINOR_VER: latest
-        PHP_EXE_PATH: Release
-        THREAD: nts
-        platform: x86
-# PHP_MAJOR_VER is PHP major version to build (7.4, 7.3)
+# PHP_MAJOR_VER is the PHP major.minor version to build
 # PHP_MINOR_VER is PHP point release number (or latest for latest release)
 # PHP_VC is the Visual C++ version
 # PHP_EXE_PATH is the relative path from php src folder to php executable

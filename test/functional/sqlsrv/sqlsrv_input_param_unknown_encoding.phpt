@@ -1,12 +1,8 @@
 --TEST--
 test input param with unknown encoding
 --DESCRIPTION--
-When running this test with PHP 7.x, PHP warnings like the one below are expected
- "Warning: Use of undefined constant SQLSRV_ENC_UNKNOWN - assumed 'SQLSRV_ENC_UNKNOWN' 
- (this will throw an Error in a future version of PHP)"
-When running this test with PHP 8.0, the previous warnings are now errors directly from PHP
-Because PHP warnings are intercepted, no need to check sqlsrv errors for those. 
-Add a new test case to check the error message 'An invalid PHP type for parameter 2 was specified.'                   
+Undefined encoding constants produce errors directly from PHP.
+Also check the driver error 'An invalid PHP type for parameter 2 was specified.'
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
@@ -21,10 +17,7 @@ function warningHandler($errno, $errstr)
 
 function compareMessages($err) 
 {
-    $exp8x = 'Undefined constant "SQLSRV_ENC_UNKNOWN"';
-    $exp7x = "Use of undefined constant SQLSRV_ENC_UNKNOWN - assumed 'SQLSRV_ENC_UNKNOWN' (this will throw an Error in a future version of PHP)";
-    
-    $expected = (PHP_MAJOR_VERSION == 8) ? $exp8x : $exp7x;
+    $expected = 'Undefined constant "SQLSRV_ENC_UNKNOWN"';
     if ($err->getMessage() !== $expected) {
         echo $err->getMessage() . PHP_EOL;
     }

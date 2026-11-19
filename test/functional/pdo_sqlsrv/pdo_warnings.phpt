@@ -5,25 +5,15 @@ Test warnings on connection and statement levels
 --FILE--
 <?php
 
-$counter = 0;
 
 // When testing with PHP 8.1-dev it throws different warning messages. Implement a custom 
 // warning handler such that when testing with previous PHP versions, the warnings are 
 // handled and verified differently.
 function warningHandler($errno, $errstr) 
 { 
-    global $counter;
-
-    $warnings = array("An unsupported attribute was designated on the PDO object.",
-                      "Driver does not support this function: driver does not support that attribute");
-
-    if (PHP_VERSION_ID < 80100) {
-        $str = strstr($errstr, $warnings[$counter++]);
-    } else {
-        $str = strstr($errstr, $warnings[1]);
-    }
+    $str = strstr($errstr, "Driver does not support this function: driver does not support that attribute");
     if ($str == false) {
-        echo "Unexpected warning message ($counter):";
+        echo "Unexpected warning message:";
         var_dump($errstr);
     }
 }
