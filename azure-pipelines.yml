@@ -28,6 +28,9 @@ jobs:
     macOS_sqlsrv_db: 'macos_sqlsrv_testdb'
     macOS_pdo_sqlsrv_db: 'macos_pdo_sqlsrv_testdb'
     REPO_ROOT: $(Build.SourcesDirectory)
+    HOMEBREW_NO_AUTO_UPDATE: '1'
+    HOMEBREW_NO_INSTALL_UPGRADE: '1'
+    DOCKER_CONTEXT: 'colima'
   steps:
   - checkout: self
     clean: true
@@ -37,6 +40,9 @@ jobs:
     inputs:
       versionSpec: '3.x'
       architecture: 'x64'
+
+  - script: python3 test/tools/test_macos_ci_setup.py
+    displayName: 'Validate macOS Setup Scripts'
 
   #########################################
   # Install Prerequisites (Homebrew)
@@ -63,60 +69,30 @@ jobs:
         exit 1
       fi
       
-      # Single brew update for all installations
-      brew update
-      
-      echo "Installing build tools in parallel..."
-      # Use install (faster than reinstall) and run in parallel where possible
-      brew install autoconf automake libtool pkg-config libiconv bison re2c icu4c 2>/dev/null || true
+      # Reuse installed formulae; serialize Homebrew writes before starting parallel work.
+      # This minimal PHP build does not enable intl, so ICU is not needed.
+      missing=()
+      for formula in autoconf automake libtool pkgconf libiconv bison re2c docker colima; do
+        if installed="$(brew list --formula --versions "$formula")" && [[ -n "$installed" ]]; then
+          echo "Reusing $installed"
+        else
+          missing+=("$formula")
+        fi
+      done
+      if [[ ${#missing[@]} -gt 0 ]]; then
+        brew install --formula "${missing[@]}"
+      fi
       
       echo "Setting up environment..."
-      echo "##vso[task.prependpath]/usr/local/opt/bison/bin"
-      echo "##vso[task.prependpath]/opt/homebrew/opt/bison/bin"
+      echo "##vso[task.prependpath]$brew_prefix/opt/bison/bin"
       
       echo "Prerequisites installed successfully!"
     displayName: 'Install Prerequisites'
-
-  #########################################
-  # Install Docker (Colima) and Start SQL Server
-  #########################################
-  - script: |
-      set -e
-      echo "Setting up Docker using Colima..."
-      
-      brew install --cask docker || true
-      brew install colima
-      
-      echo "Starting Colima..."
-      colima start --cpu 2 --memory 4
-      
-      echo "Verifying Docker..."
-      docker ps
-      
-      echo "Docker setup complete!"
-    displayName: 'Setup Docker (Colima)'
 
   - powershell: |
       $guid = [guid]::NewGuid().ToString()
       Write-Host "##vso[task.setvariable variable=macpwd;issecret=true]$guid"
     displayName: 'Generate Password for macOS'
-
-  - script: |
-      set -e
-      echo "Starting SQL Server Docker container..."
-      
-      docker run -e 'ACCEPT_EULA=Y' -e "SA_PASSWORD=$(macpwd)" \
-        -p 1433:1433 --name sqlserver \
-        -d mcr.microsoft.com/mssql/server:2022-latest
-      
-      echo "Waiting for SQL Server to start..."
-      sleep 30
-      
-      docker ps -a
-      docker logs sqlserver || true
-      
-      echo "SQL Server container started!"
-    displayName: 'Start SQL Server in Docker'
 
   #########################################
   # Install ODBC Driver and Tools
@@ -179,24 +155,6 @@ jobs:
       echo "##vso[task.prependpath]/usr/local/opt/mssql-tools18/bin"
     displayName: 'Install ODBC Driver 18 and Tools'
 
-  - script: |
-      set -e
-      echo "Verifying SQL Server connection..."
-      
-      # Wait a bit more for SQL Server to be fully ready
-      sleep 10
-      
-      # Try to connect
-      /opt/homebrew/opt/mssql-tools18/bin/sqlcmd -S 127.0.0.1 \
-        -U $(sqlUser) -P "$(macpwd)" -No -C \
-        -Q "SELECT @@Version" || \
-      /usr/local/opt/mssql-tools18/bin/sqlcmd -S 127.0.0.1 \
-        -U $(sqlUser) -P "$(macpwd)" -No -C \
-        -Q "SELECT @@Version"
-      
-      echo "SQL Server connection verified!"
-    displayName: 'Verify SQL Server Connection'
-
   #########################################
   # Build PHP from Source
   #########################################
@@ -234,12 +192,59 @@ jobs:
 
   - script: |
       set -e
-      cd $(Build.SourcesDirectory)/php-src
+      cd "$(Build.SourcesDirectory)/php-src"
+
+      # Keep the child in this task and always join it, including when PHP compilation fails.
+      sql_log="$(mktemp)"
+      sql_pid=
+      finish_setup() {
+        status=$?
+        trap - EXIT
+        if [[ -n "$sql_pid" ]]; then
+          if wait "$sql_pid"; then
+            :
+          else
+            echo "##[error]SQL Server setup failed."
+            status=1
+          fi
+        fi
+        cat "$sql_log"
+        rm -f "$sql_log"
+        exit "$status"
+      }
+      trap finish_setup EXIT
+      trap 'exit 130' INT
+      trap 'exit 143' TERM
+
+      (
+        set -e
+        echo "Starting Colima and SQL Server alongside the PHP build..."
+        colima start --cpu 2 --memory 4
+        docker info
+        export SA_PASSWORD="$SQLCMDPASSWORD"
+        docker run -e ACCEPT_EULA=Y -e SA_PASSWORD \
+          -p 1433:1433 --name sqlserver \
+          -d mcr.microsoft.com/mssql/server:2022-latest
+
+        # Probe the same host endpoint used by PHPTs, with bounded login/query attempts.
+        for ((attempt=1; attempt<=60; attempt++)); do
+          if sqlcmd -S 127.0.0.1 -U "$(sqlUser)" -No -C -b -l 5 -t 5 \
+            -Q "SET NOCOUNT ON; SELECT 1"; then
+            echo "SQL Server connection verified!"
+            exit 0
+          fi
+          echo "Waiting for SQL Server ($attempt/60)..."
+          sleep 5
+        done
+        echo "##[error]SQL Server did not become ready after 60 attempts."
+        docker logs sqlserver
+        exit 1
+      ) >"$sql_log" 2>&1 &
+      sql_pid=$!
       
       echo "Configuring PHP build environment..."
       export PATH="/usr/local/opt/bison/bin:/opt/homebrew/opt/bison/bin:$PATH"
       export LDFLAGS="-L/usr/local/opt/bison/lib -L/opt/homebrew/opt/bison/lib"
-      export PKG_CONFIG_PATH="/usr/local/opt/icu4c/lib/pkgconfig:/opt/homebrew/opt/icu4c/lib/pkgconfig"
       
       echo "Running buildconf..."
       ./buildconf --force
@@ -262,10 +267,21 @@ jobs:
       mkdir -p $(Build.SourcesDirectory)/out
       cp modules/sqlsrv.so $(Build.SourcesDirectory)/out/
       cp modules/pdo_sqlsrv.so $(Build.SourcesDirectory)/out/
+
+      echo "Waiting for SQL Server setup..."
+      if wait "$sql_pid"; then
+        sql_pid=
+      else
+        sql_pid=
+        echo "##[error]SQL Server setup failed."
+        exit 1
+      fi
       
       echo "Drivers built:"
       ls -la $(Build.SourcesDirectory)/out/
-    displayName: 'Build PHP with Drivers'
+    displayName: 'Build PHP with Drivers and Start SQL Server'
+    env:
+      SQLCMDPASSWORD: $(macpwd)
 
   - script: |
       set -e

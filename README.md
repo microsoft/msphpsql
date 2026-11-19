@@ -24,6 +24,12 @@ Thank you for taking the time to participate in the [sentiment survey](https://g
 [Coverage Codecov]: https://codecov.io/gh/microsoft/msphpsql/branch/dev/graph/badge.svg
 [codecov-site]: https://codecov.io/gh/microsoft/msphpsql
 
+### macOS CI setup
+
+The macOS job in `azure-pipelines.yml` reuses installed Homebrew formulae without automatic updates or upgrades, installs missing tools serially, and uses the Docker CLI with Colima rather than Docker Desktop. Its minimal PHP build does not enable `intl`, so it does not install ICU. PHP's build system still checks the required Bison and re2c versions.
+
+After ODBC installation, Colima and SQL Server startup run alongside PHP compilation. The job waits for both, uses bounded SQL connection probes instead of fixed startup sleeps, and prints setup diagnostics even when compilation fails. Both functional suites still run in full. `test/tools/test_macos_ci_setup.py` exercises this coordination and failure handling with mocked tools; actual macOS CI is required to measure runtime savings.
+
 ## Get Started
 
 Please follow the [Getting started](https://docs.microsoft.com/sql/connect/php/getting-started-with-the-php-sql-driver) page.
