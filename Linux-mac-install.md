@@ -1,7 +1,11 @@
 # Linux and macOS Installation Tutorial for the Microsoft Drivers for PHP for SQL Server
-The following instructions assume a clean environment and show how to install PHP 8.4, the Microsoft ODBC driver, the Apache web server, and the Microsoft Drivers for PHP for SQL Server on Ubuntu, RedHat, Debian, Suse, Alpine, and macOS. These instructions advise installing the drivers using PECL, but you can also download the prebuilt binaries from the [Microsoft Drivers for PHP for SQL Server](https://github.com/Microsoft/msphpsql/releases) Github project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver). For an explanation of extension loading and why we do not add the extensions to php.ini, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver#loading-the-driver-at-php-startup).
+The following instructions assume a clean environment and show how to install PHP 8.4, the Microsoft ODBC driver, the Apache web server, and the Microsoft Drivers for PHP for SQL Server on Ubuntu, RedHat, Debian, Suse, Alpine, and macOS. These instructions install the drivers using [PIE (PHP Installer for Extensions)](https://github.com/php/pie). Starting with 5.14.0, new releases will no longer be published to PECL. You can also download the prebuilt binaries from the [Microsoft Drivers for PHP for SQL Server](https://github.com/Microsoft/msphpsql/releases) GitHub project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver). For an explanation of extension loading, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver#loading-the-driver-at-php-startup).
 
-The following instructions install PHP 8.4 by default using `pecl install`, if the PHP 8.4 packages are available. You may need to run `pecl channel-update pecl.php.net` first. Some Linux distros default to older PHP versions; select PHP 8.4 or follow the notes to install PHP 8.5 instead. This development branch also targets PHP 8.6 prereleases, which require matching source builds for qualification rather than an assumption that release packages are available.
+The following instructions install PHP 8.4 by default, if the PHP 8.4 packages are available. Some Linux distros default to older PHP versions; select PHP 8.4 or follow the notes to install PHP 8.5 instead. Release 5.14.0 supports PHP 8.4, PHP 8.5, and PHP 8.6, and removes support for PHP 8.3 and earlier.
+
+After installing PHP in Step 1 for your platform, [install PIE](https://github.com/php/pie/blob/main/docs/usage.md#installing-pie) and make the `pie` command available on your PATH (including when using `sudo`). Follow PIE's platform prerequisites, including PHP development tools, a C/C++ build toolchain, and the PHP ZIP extension or Git for downloading source. Install the ODBC prerequisites in Step 2 before installing the drivers. If multiple PHP versions are installed, use PIE's `--with-php-config` and, when needed, `--with-phpize-path` options to select the matching development tools.
+
+The Linux commands below use `--skip-enable-extension` because the subsequent steps configure INI files for CLI and the web server explicitly. On macOS, PIE attempts to enable the extensions automatically. Do not add duplicate extension entries, and ensure PDO is loaded before PDO_SQLSRV.
 
 Also included are instructions for installing the PHP FastCGI Process Manager, PHP-FPM, on Ubuntu. This is needed if you are using the nginx web server instead of Apache.
 
@@ -34,8 +38,8 @@ Install the ODBC driver for Ubuntu by following the instructions on the [Install
 
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
 ```bash
-sudo pecl install sqlsrv
-sudo pecl install pdo_sqlsrv
+sudo pie install --skip-enable-extension microsoft/sqlsrv
+sudo pie install --skip-enable-extension microsoft/pdo_sqlsrv
 sudo su
 printf "; priority=20\nextension=sqlsrv.so\n" > /etc/php/8.4/mods-available/sqlsrv.ini
 printf "; priority=30\nextension=pdo_sqlsrv.so\n" > /etc/php/8.4/mods-available/pdo_sqlsrv.ini
@@ -81,9 +85,8 @@ Install the ODBC driver for Ubuntu by following the instructions on the [Install
 
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
 ```bash
-sudo pecl config-set php_ini /etc/php/8.4/fpm/php.ini
-sudo pecl install sqlsrv
-sudo pecl install pdo_sqlsrv
+sudo pie install --skip-enable-extension microsoft/sqlsrv
+sudo pie install --skip-enable-extension microsoft/pdo_sqlsrv
 sudo su
 printf "; priority=20\nextension=sqlsrv.so\n" > /etc/php/8.4/mods-available/sqlsrv.ini
 printf "; priority=30\nextension=pdo_sqlsrv.so\n" > /etc/php/8.4/mods-available/pdo_sqlsrv.ini
@@ -144,7 +147,7 @@ dnf module install php:remi-8.4
 subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
 dnf update
 # Note: The php-pdo package is required only for the PDO_SQLSRV driver
-dnf install php-pdo php-pear php-devel
+dnf install php-pdo php-devel
 ```
 
 To install PHP on Red Hat 9, run the following:
@@ -159,7 +162,7 @@ dnf module reset php
 dnf module install php:remi-8.4
 dnf update
 # Note: The php-pdo package is required only for the PDO_SQLSRV driver
-dnf install php-pdo php-pear php-devel
+dnf install php-pdo php-devel
 ```
 
 ### Step 2. Install prerequisites
@@ -167,8 +170,8 @@ Install the ODBC driver for Red Hat 8 or 9 by following the instructions on the 
 
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
 ```bash
-sudo pecl install sqlsrv
-sudo pecl install pdo_sqlsrv
+sudo pie install --skip-enable-extension microsoft/sqlsrv
+sudo pie install --skip-enable-extension microsoft/pdo_sqlsrv
 sudo su
 echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/30-pdo_sqlsrv.ini
 echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/20-sqlsrv.ini
@@ -220,8 +223,8 @@ You may need to add `/usr/sbin` to your `$PATH`, as the `locale-gen` executable 
 
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
 ```bash
-sudo pecl install sqlsrv
-sudo pecl install pdo_sqlsrv
+sudo pie install --skip-enable-extension microsoft/sqlsrv
+sudo pie install --skip-enable-extension microsoft/pdo_sqlsrv
 sudo su
 printf "; priority=20\nextension=sqlsrv.so\n" > /etc/php/8.4/mods-available/sqlsrv.ini
 printf "; priority=30\nextension=pdo_sqlsrv.so\n" > /etc/php/8.4/mods-available/pdo_sqlsrv.ini
@@ -265,8 +268,8 @@ Install the ODBC driver for Suse by following the instructions on the [Install t
 
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
 ```bash
-sudo pecl install sqlsrv
-sudo pecl install pdo_sqlsrv
+sudo pie install --skip-enable-extension microsoft/sqlsrv
+sudo pie install --skip-enable-extension microsoft/pdo_sqlsrv
 sudo su
 echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/pdo_sqlsrv.ini
 echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/sqlsrv.ini
@@ -302,11 +305,10 @@ Then run:
 sudo su
 apk update
 # Note: The php84-pdo package is required only for the PDO_SQLSRV driver
-apk add php84 php84-dev php84-pear php84-pdo php84-openssl autoconf make g++
+apk add php84 php84-dev php84-pdo php84-openssl autoconf make g++
 # The following symbolic links are optional but useful
 ln -s /usr/bin/php84 /usr/bin/php
 ln -s /usr/bin/phpize84 /usr/bin/phpize
-ln -s /usr/bin/pecl84 /usr/bin/pecl
 ln -s /usr/bin/php-config84 /usr/bin/php-config
 ```
 
@@ -315,8 +317,8 @@ Install the ODBC driver for Alpine by following the instructions on the [Install
 
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
 ```bash
-sudo pecl install sqlsrv
-sudo pecl install pdo_sqlsrv
+sudo pie install --skip-enable-extension microsoft/sqlsrv
+sudo pie install --skip-enable-extension microsoft/pdo_sqlsrv
 sudo su
 echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/10_pdo_sqlsrv.ini
 echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/20_sqlsrv.ini
@@ -377,14 +379,14 @@ brew install autoconf automake libtool
 
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
 ```bash
-sudo pecl install sqlsrv
-sudo pecl install pdo_sqlsrv
+sudo pie install microsoft/sqlsrv
+sudo pie install microsoft/pdo_sqlsrv
 ```
 
 If using Apple Silicon (M1/M2/M3), do the following instead:
 ```bash
-sudo CXXFLAGS="-I/opt/homebrew/opt/unixodbc/include/" LDFLAGS="-L/opt/homebrew/lib/" pecl install sqlsrv
-sudo CXXFLAGS="-I/opt/homebrew/opt/unixodbc/include/" LDFLAGS="-L/opt/homebrew/lib/" pecl install pdo_sqlsrv
+sudo CXXFLAGS="-I/opt/homebrew/opt/unixodbc/include/" LDFLAGS="-L/opt/homebrew/lib/" pie install microsoft/sqlsrv
+sudo CXXFLAGS="-I/opt/homebrew/opt/unixodbc/include/" LDFLAGS="-L/opt/homebrew/lib/" pie install microsoft/pdo_sqlsrv
 ```
 
 ### Step 4. Install Apache and configure driver loading

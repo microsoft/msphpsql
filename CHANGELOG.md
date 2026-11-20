@@ -5,18 +5,25 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
 ## [Unreleased]
 
+## 5.14.0 - 2026-11-20
+
 ### Removed
-- Compatibility paths, build targets and test branches for PHP 8.3 and earlier. This development branch targets PHP 8.4, 8.5 and 8.6 only; PHP 8.6 prerelease qualification is not a production-support announcement.
+- Support for PHP 8.3 and earlier, including compatibility paths, build targets and test branches. Native builds reject PHP versions outside 8.4, 8.5 and 8.6.
 
 ### Added
+- Added support for PHP 8.6.
 - PDO native input string declarations through `SQLSRV_ATTR_PARAM_METADATA` (also usable with `bindValue` and `execute` arrays), or `bindParam` driver-option arrays. Explicit `VARCHAR`/`NVARCHAR` types and lengths are independent of source encoding; bounded VARCHAR currently rejects non-ASCII input pending collation-aware validation. Unicode NVARCHAR and VARCHAR(MAX) remain supported. Opt-in connection attribute `SQLSRV_ATTR_DEFAULT_STR_LENGTH` provides a per-statement sizing floor that grows to fit longer values, retains a high-water mark, and promotes to MAX. Legacy defaults and output parameter lengths are unchanged.
 - Opt-in `PDO::SQLSRV_ENCODING_UTF8_VARCHAR` and SQLSRV `CharacterSet => SQLSRV_ENC_UTF8_VARCHAR` (`utf-8-varchar`) interpret PHP strings as UTF-8 while inferring `VARCHAR` parameters. Strings, output parameters and reads use Unicode ODBC transport. Narrow SQL stream inputs validate UTF-8 and send binary C buffers to avoid client-locale conversion and ODBC wide-to-narrow streaming corruption. Existing UTF-8 encoding and PDO extended string flags are unchanged. Explicit SQL types and Always Encrypted parameter metadata still take precedence. Lossless non-ASCII `VARCHAR` input requires a UTF-8 parameter/database collation as well as a compatible destination column; a column's `_UTF8` collation alone is not sufficient. PDO emulated prepares use ordinary character literals unless overridden by the existing national-string options, and therefore also depend on the database collation.
 - Connection option aliases `ConnectTimeout` for `LoginTimeout`, `FailoverPartner` for `Failover_Partner`, and `WorkstationID` for `WSID` in both drivers. Existing ODBC keywords and attributes are retained for compatibility with older supported ODBC drivers. Names are case-insensitive, and the last occurrence of an option or its alias wins.
 - The `Password` alias for `PWD` in SQLSRV connection options, and `PWD`/`Password` in PDO_SQLSRV DSNs. A non-null PDO constructor password takes precedence (including an empty string); otherwise the DSN password is used. The username still comes from the PDO constructor. Password aliases retain existing authentication restrictions and brace-escaping rules. Prefer constructor credentials when a DSN might be logged or shared.
 
+### Changed
+- Starting with 5.14.0, new releases are distributed through [PIE](https://github.com/php/pie) instead of PECL: `pie install microsoft/sqlsrv` and `pie install microsoft/pdo_sqlsrv`. New releases will no longer be published to PECL. Prebuilt binaries remain available on the [GitHub releases page](https://github.com/microsoft/msphpsql/releases).
+- Streamline macOS CI setup by reusing installed Homebrew dependencies, removing unused ICU and Docker Desktop dependencies, and running Colima/SQL Server startup alongside PHP compilation with bounded readiness probes and explicit failure reporting. Both full functional suites are retained; runtime savings require measurement in macOS CI.
+
 ### Fixed
 - PDO connection-resiliency tests check the physical transport so MARS logical sessions are not mistaken for non-TCP connections.
-- Initial PHP 8.6 development compatibility: adapt stream opener error reporting to the new PHP API and replace removed INI macros while preserving numeric parsing and earlier PHP behavior. Qualification against PHP 8.6 prereleases is ongoing; this is not a production support announcement.
+- PHP 8.6 compatibility: adapt stream opener error reporting to the new PHP API and replace removed INI macros while preserving numeric parsing and earlier PHP behavior.
 - Windows build scripts recognize official PHP prerelease version tags and select Visual Studio 2026 for PHP 8.6 and Visual Studio 2022 for PHP 8.4/8.5.
 - Correct Azure Key Vault credential buffer sizing during Always Encrypted connection configuration in both drivers, preserving complete principal IDs and secrets.
 - Honor per-parameter UTF-8 VARCHAR encoding overrides for TVP columns, falling back to the statement/connection encoding when unspecified (including `SQLSRV_PHPTYPE_TABLE`), while retaining numeric and binary column encodings derived from SQL metadata.
@@ -25,6 +32,23 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 - Bounded connection-option brace validation to the supplied value length, avoiding reads past the terminator of brace-quoted values.
 - Securely erase driver-owned PDO DSN password copies before releasing or replacing them, including parser errors and connection failures. Original PDO/caller-owned strings and exception trace behavior are unchanged.
 - Issue [#1685](https://github.com/microsoft/msphpsql/issues/1685) - PDO_SQLSRV fetches no longer slow down with the number of bound parameters. The driver now opts out of the PDO `FETCH_PRE`, `FETCH_POST` and `NORMALIZE` parameter events, which its parameter hook ignores, so PDO no longer calls the hook for every bound parameter on every fetched row.
+- Harden Windows performance-test setup by resolving and validating executable paths before invocation.
+
+### Limitations
+- No support for inout / output params when using sql_variant type
+- No support for inout / output params when formatting decimal values
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
+- Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
+  - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted enabled, named parameters in subqueries are not supported
+  - Issue [#1050](https://github.com/microsoft/msphpsql/issues/1050) - With Always Encrypted enabled, insertion requires the column list for any tables with identity columns
+  - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
+
+### Known Issues
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
+- When pooling is enabled in Linux or macOS
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
 
 ## 5.13.3 - 2026-08-07
 Updated PECL release packages. Here is the list of updates:
